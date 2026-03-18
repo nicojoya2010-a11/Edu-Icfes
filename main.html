@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edu Icfes — Base</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="notification-container"></div>
+
+<div class="main-layout">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="nexus-logo">◆ NEXUS ACADEMY</div>
+    <div class="top-actions">
+      <div class="system-time" id="sys-time">--:--:--</div>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.65rem;" onclick="logout()">
+        ⏻ SALIR
+      </button>
+    </div>
+  </div>
+
+  <!-- Player Card -->
+  <div class="panel player-card animate-in" style="animation-delay:0.05s">
+    <div class="corner-tl"></div>
+    <div class="corner-tr"></div>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+
+    <div class="level-badge big" id="level-badge">1</div>
+
+    <div class="player-info">
+      <div class="player-rank-line">
+        <div class="player-name" id="player-name">PLAYER</div>
+        <div class="rank-chip" id="rank-chip">E</div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:6px;" id="rank-label">Rango: Aprendiz</div>
+
+      <div class="xp-section">
+        <div class="xp-title-row">
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);">EXP</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--accent-cyan);" id="xp-label">0 / 100</span>
+        </div>
+        <div class="xp-bar-track">
+          <div class="xp-bar-fill" id="xp-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="stats-grid animate-in" style="animation-delay:0.1s">
+    <div class="stat-card">
+      <div class="stat-card-icon">🎯</div>
+      <div class="stat-card-val" id="stat-correct">0</div>
+      <div class="stat-card-label">Correctas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon">📊</div>
+      <div class="stat-card-val" id="stat-total">0</div>
+      <div class="stat-card-label">Respondidas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon">🔥</div>
+      <div class="stat-card-val" id="stat-streak">0</div>
+      <div class="stat-card-label">Racha Actual</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon">⭐</div>
+      <div class="stat-card-val" id="stat-totalxp">0</div>
+      <div class="stat-card-label">XP Total</div>
+    </div>
+  </div>
+
+  <!-- Nav Menu -->
+  <div class="section-title animate-in" style="animation-delay:0.15s">ACCIONES</div>
+
+  <div class="nav-menu animate-in" style="animation-delay:0.15s">
+
+    <a href="ejercicios.html" class="nav-btn">
+      <div class="nav-icon">⚔️</div>
+      <div class="nav-text">
+        <div class="nav-title">ENTRENAMIENTO</div>
+        <div class="nav-desc">Responde ejercicios y gana experiencia</div>
+      </div>
+      <div class="nav-arrow">▶</div>
+    </a>
+
+    <button class="nav-btn gold-nav" onclick="openModal('modal-profile')">
+      <div class="nav-icon">👤</div>
+      <div class="nav-text">
+        <div class="nav-title" style="color:var(--accent-gold);">PERFIL</div>
+        <div class="nav-desc">Ver tu progreso y estadísticas</div>
+      </div>
+      <div class="nav-arrow" style="color:var(--accent-gold);">▶</div>
+    </button>
+
+    <button class="nav-btn gold-nav" onclick="openModal('modal-achievements')">
+      <div class="nav-icon">🏆</div>
+      <div class="nav-text">
+        <div class="nav-title" style="color:var(--accent-gold);">LOGROS</div>
+        <div class="nav-desc">Desbloquea medallas de honor</div>
+      </div>
+      <div class="nav-arrow" style="color:var(--accent-gold);">▶</div>
+    </button>
+
+    <button class="nav-btn purple-nav" onclick="openModal('modal-leaderboard')">
+      <div class="nav-icon">🌐</div>
+      <div class="nav-text">
+        <div class="nav-title" style="color:var(--accent-purple);">RANKING GLOBAL</div>
+        <div class="nav-desc">Top 10 mejores jugadores</div>
+      </div>
+      <div class="nav-arrow" style="color:var(--accent-purple);">▶</div>
+    </button>
+
+  </div>
+
+  <!-- Quick Subject Access -->
+  <div class="section-title animate-in" style="animation-delay:0.2s">ENTRENAMIENTO RÁPIDO</div>
+  <div class="subject-pills animate-in" style="animation-delay:0.2s">
+    <a href="ejercicios.html?s=math" class="subject-pill">∑ Matemáticas</a>
+    <a href="ejercicios.html?s=reading" class="subject-pill">📖 Lectura</a>
+    <a href="ejercicios.html?s=english" class="subject-pill">🌐 Inglés</a>
+    <a href="ejercicios.html?s=science" class="subject-pill">⚗ Ciencias</a>
+    <a href="ejercicios.html?s=sociales" class="subject-pill">🌎 Sociales</a>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+
+<!-- ── PROFILE MODAL ── -->
+<div class="modal-overlay hidden" id="modal-profile">
+  <div class="modal-box">
+    <div class="corner-tl" style="border-color:var(--accent-gold)"></div>
+    <div class="corner-tr" style="border-color:var(--accent-gold)"></div>
+    <div class="corner-bl" style="border-color:var(--accent-gold)"></div>
+    <div class="corner-br" style="border-color:var(--accent-gold)"></div>
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--accent-gold);">▶ FICHA DE PERSONAJE</div>
+      <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
+    </div>
+    <div class="modal-body" id="profile-body">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── ACHIEVEMENTS MODAL ── -->
+<div class="modal-overlay hidden" id="modal-achievements">
+  <div class="modal-box">
+    <div class="corner-tl"></div><div class="corner-tr"></div>
+    <div class="corner-bl"></div><div class="corner-br"></div>
+    <div class="modal-header">
+      <div class="modal-title">▶ REGISTRO DE LOGROS</div>
+      <button class="modal-close" onclick="closeModal('modal-achievements')">✕</button>
+    </div>
+    <div class="modal-body" id="achievements-body">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── LEADERBOARD MODAL ── -->
+<div class="modal-overlay hidden" id="modal-leaderboard">
+  <div class="modal-box">
+    <div class="corner-tl" style="border-color:var(--accent-purple)"></div>
+    <div class="corner-tr" style="border-color:var(--accent-purple)"></div>
+    <div class="corner-bl" style="border-color:var(--accent-purple)"></div>
+    <div class="corner-br" style="border-color:var(--accent-purple)"></div>
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--accent-purple);">▶ CLASIFICACIÓN GLOBAL</div>
+      <button class="modal-close" onclick="closeModal('modal-leaderboard')">✕</button>
+    </div>
+    <div class="modal-body" id="leaderboard-body">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // ── Auth guard ──
+  const user = requireAuth();
+  if (user) init();
+
+  function init() {
+    updateHUD();
+    startClock();
+  }
+
+  // ── Update HUD ──
+  function updateHUD() {
+    const u = Auth.getCurrentUser();
+    if (!u) return;
+    const rank = Progress.getRank(u.level);
+    const pct = Progress.xpPercent(u);
+
+    // Player card
+    document.getElementById('level-badge').textContent = u.level;
+    document.getElementById('player-name').textContent = u.displayName;
+    document.getElementById('rank-chip').textContent = 'Rng.' + rank.rank;
+    document.getElementById('rank-chip').style.color = rank.color;
+    document.getElementById('rank-chip').style.borderColor = rank.color;
+    document.getElementById('rank-label').textContent = 'Rango: ' + rank.label;
+    document.getElementById('xp-bar').style.width = pct + '%';
+    document.getElementById('xp-label').textContent = u.xp + ' / ' + XP_PER_LEVEL + ' XP';
+
+    // Stats
+    document.getElementById('stat-correct').textContent = u.totalCorrect || 0;
+    document.getElementById('stat-total').textContent = u.totalAnswered || 0;
+    document.getElementById('stat-streak').textContent = u.streak || 0;
+    document.getElementById('stat-totalxp').textContent = u.totalXP || 0;
+  }
+
+  // ── Clock ──
+  function startClock() {
+    function tick() {
+      const now = new Date();
+      document.getElementById('sys-time').textContent =
+        now.toLocaleTimeString('es-CO', { hour12: false });
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ── Modals ──
+  function openModal(id) {
+    Sound.click();
+    if (id === 'modal-profile') renderProfile();
+    if (id === 'modal-achievements') renderAchievements();
+    if (id === 'modal-leaderboard') renderLeaderboard();
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.add('hidden');
+    });
+  });
+
+  // ── Profile Render ──
+  function renderProfile() {
+    const u = Auth.getCurrentUser();
+    const rank = Progress.getRank(u.level);
+    const accuracy = u.totalAnswered ? Math.round((u.totalCorrect / u.totalAnswered) * 100) : 0;
+    const subStats = u.subjectStats || {};
+
+    const subjectBars = Object.entries(SUBJECTS).map(([key, sub]) => {
+      const s = subStats[key] || { answered: 0, correct: 0 };
+      const pct = s.answered ? Math.round((s.correct / s.answered) * 100) : 0;
+      const barColors = { math: '#4dcfff', reading: '#c77dff', english: '#00ff88', science: '#ff8c5a', sociales: '#ffd700' };
+      return `
+        <div class="subject-bar-row">
+          <div class="subject-bar-label">${sub.icon} ${sub.label}</div>
+          <div class="subject-bar-track">
+            <div class="subject-bar-fill" style="width:${pct}%;background:${barColors[key]};box-shadow:0 0 6px ${barColors[key]}40"></div>
+          </div>
+          <div class="subject-bar-num">${s.correct}/${s.answered}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('profile-body').innerHTML = `
+      <div style="text-align:center;margin-bottom:20px;">
+        <div class="profile-avatar">${u.displayName[0].toUpperCase()}</div>
+        <div style="font-family:var(--font-hud);font-size:1.1rem;color:var(--text-primary);">${u.displayName}</div>
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">@${u.username}</div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:${rank.color};margin-top:4px;">
+          ◆ ${rank.label} · Rango ${rank.rank}
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">Estadísticas</div>
+        <div class="stat-row"><span class="stat-key">Nivel</span><span class="stat-val">${u.level}</span></div>
+        <div class="stat-row"><span class="stat-key">XP Total</span><span class="stat-val">${u.totalXP || 0}</span></div>
+        <div class="stat-row"><span class="stat-key">Respondidas</span><span class="stat-val">${u.totalAnswered || 0}</span></div>
+        <div class="stat-row"><span class="stat-key">Correctas</span><span class="stat-val" style="color:var(--accent-green)">${u.totalCorrect || 0}</span></div>
+        <div class="stat-row"><span class="stat-key">Precisión</span><span class="stat-val">${accuracy}%</span></div>
+        <div class="stat-row"><span class="stat-key">Racha Máx.</span><span class="stat-val" style="color:var(--accent-orange)">${u.maxStreak || 0}</span></div>
+        <div class="stat-row"><span class="stat-key">Logros</span><span class="stat-val" style="color:var(--accent-gold)">${(u.achievements || []).length} / ${ACHIEVEMENTS.length}</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">Progreso por Materia</div>
+        <div style="padding:12px 16px;">${subjectBars}</div>
+      </div>
+    `;
+
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.subject-bar-fill').forEach(b => {
+        const w = b.style.width;
+        b.style.width = '0';
+        requestAnimationFrame(() => { b.style.width = w; });
+      });
+    }, 100);
+  }
+
+  // ── Achievements Render ──
+  function renderAchievements() {
+    const u = Auth.getCurrentUser();
+    const unlocked = u.achievements || [];
+
+    const list = ACHIEVEMENTS.map(ach => {
+      const done = unlocked.includes(ach.id);
+      return `
+        <div class="achievement ${done ? 'unlocked' : 'locked'}">
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-info">
+            <div class="achievement-name">${ach.name}</div>
+            <div class="achievement-desc">${ach.desc}</div>
+          </div>
+          ${done ? '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--accent-gold);">✓</div>' : ''}
+        </div>`;
+    }).join('');
+
+    document.getElementById('achievements-body').innerHTML = `
+      <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);margin-bottom:16px;">
+        Desbloqueados: <span style="color:var(--accent-gold)">${unlocked.length}</span> / ${ACHIEVEMENTS.length}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">${list}</div>
+    `;
+  }
+
+  // ── Leaderboard Render (async - Firebase) ──
+  async function renderLeaderboard() {
+    const currentUser = Auth.getCurrentUser();
+    const body = document.getElementById('leaderboard-body');
+
+    // Mostrar loader mientras carga
+    body.innerHTML = `
+      <div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">
+        <div class="loader-ring" style="width:30px;height:30px;margin:0 auto 12px;"></div>
+        Conectando con el servidor...
+      </div>`;
+
+    const top = await Leaderboard.getTop10();
+    const medals = ['🥇', '🥈', '🥉'];
+
+    const rows = top.map((p, i) => {
+      const isCurrent = p.username === currentUser.username;
+      const cls = `leaderboard-row ${i < 3 ? 'top-' + (i+1) : ''} ${isCurrent ? 'current-user' : ''}`;
+      return `
+        <div class="${cls}">
+          <div class="rank-number">${medals[i] || (i + 1)}</div>
+          <div class="player-name">${p.displayName}${isCurrent ? ' <span style="color:var(--accent-cyan);font-size:0.6rem;">(tú)</span>' : ''}</div>
+          <div class="player-level">Nv.${p.level}</div>
+          <div class="player-score">${p.totalXP} XP</div>
+        </div>`;
+    }).join('');
+
+    const empty = top.length === 0 ? `
+      <div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">
+        Nadie en el ranking aún.<br>¡Sé el primero!
+      </div>` : '';
+
+    const isOnline = navigator.onLine;
+    const sourceLabel = isOnline
+      ? '🌐 Ranking global en tiempo real'
+      : '📴 Sin conexión — mostrando datos locales';
+
+    body.innerHTML = `
+      <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">
+        ${sourceLabel}
+      </div>
+      <div class="leaderboard-row" style="opacity:0.4;font-size:0.65rem;padding:6px 16px;">
+        <div>#</div><div>JUGADOR</div><div>NVL</div><div>XP</div>
+      </div>
+      ${rows}${empty}
+    `;
+  }
+
+  // ── Logout ──
+  function logout() {
+    Auth.logout();
+    window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>
