@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edu Icfes — Iniciar Sesión</title>
+  <title>Edu-Icfes — Iniciar Sesión</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,9 +14,9 @@
 <div class="auth-wrapper">
   <div class="auth-container animate-in">
     <div class="brand-header">
-      <div class="brand-logo">NEXUS</div>
-      <div class="brand-logo" style="font-size:1rem;margin-top:-6px;letter-spacing:0.5em;">ACADEMY</div>
-      <div class="brand-divider"><span>Nivelacion Educativa</span></div>
+      <div class="brand-logo">EDU</div>
+      <div class="brand-logo" style="font-size:1rem;margin-top:-6px;letter-spacing:0.5em;">ICFES</div>
+      <div class="brand-divider"><span>Nivelación Educativa</span></div>
       <div class="brand-sub">Sistema de Entrenamiento v1.0</div>
     </div>
 
@@ -154,18 +154,21 @@
     el.classList.add('visible');
   }
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     clearErrors();
     const user = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
-    const result = Auth.login(user, pass);
+    const btn  = e.submitter;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
+    const result = await Auth.loginAsync(user, pass);
+    if (btn) { btn.disabled = false; btn.textContent = '▶ ACCEDER AL SISTEMA'; }
     if (result.ok) {
-      Notify.success('✓ Sesión iniciada. Bienvenido de vuelta.');
+      Notify.success('Sesion iniciada. Bienvenido!');
       Sound.click();
       setTimeout(() => { window.location.href = 'main.html'; }, 600);
     } else {
-      showError('login-error', '✗ ' + result.error);
+      showError('login-error', result.error);
     }
   }
 
@@ -179,7 +182,7 @@
     const secA = document.getElementById('reg-sec-answer').value.trim();
     const result = Auth.register(user, name, pass, secQ, secA);
     if (result.ok) {
-      Notify.success('✓ Personaje creado. ¡Bienvenido a Nexus Academy!');
+      Notify.success('✓ Personaje creado. ¡Bienvenido a Edu-Icfes!');
       Sound.click();
       setTimeout(() => { window.location.href = 'main.html'; }, 600);
     } else {
@@ -223,7 +226,7 @@
   document.getElementById('stat-questions').textContent = QUESTIONS.length;
   document.getElementById('stat-achievements').textContent = ACHIEVEMENTS.length;
 
-  const chars = '01アイウエオカキクSYSTEMDATALOADED0110';
+  const chars = '01アイウエオカキクEDUIICFES0110';
   const pContainer = document.getElementById('particles');
   for (let i = 0; i < 18; i++) {
     const p = document.createElement('div');
@@ -238,3 +241,4 @@
 </script>
 </body>
 </html>
+
