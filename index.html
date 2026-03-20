@@ -172,7 +172,7 @@
     }
   }
 
-  function handleRegister(e) {
+  async function handleRegister(e) {
     e.preventDefault();
     clearErrors();
     const name = document.getElementById('reg-name').value.trim();
@@ -180,13 +180,16 @@
     const pass = document.getElementById('reg-pass').value;
     const secQ = document.getElementById('reg-sec-question').value;
     const secA = document.getElementById('reg-sec-answer').value.trim();
-    const result = Auth.register(user, name, pass, secQ, secA);
+    const btn  = e.submitter;
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+    const result = await Auth.register(user, name, pass, secQ, secA);
+    if (btn) { btn.disabled = false; btn.textContent = 'CREAR PERSONAJE'; }
     if (result.ok) {
-      Notify.success('✓ Personaje creado. ¡Bienvenido a Edu-Icfes!');
+      Notify.success('Personaje creado. Bienvenido a Edu-Icfes!');
       Sound.click();
       setTimeout(() => { window.location.href = 'main.html'; }, 600);
     } else {
-      showError('register-error', '✗ ' + result.error);
+      showError('register-error', result.error);
     }
   }
 
@@ -241,4 +244,5 @@
 </script>
 </body>
 </html>
+
 
