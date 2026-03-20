@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edu Icfes — Base</title>
+  <title>Edu-Icfes — Base</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
 
   <!-- Top Bar -->
   <div class="top-bar">
-    <div class="nexus-logo">◆ NEXUS ACADEMY</div>
+    <div class="nexus-logo">◆ EDU-ICFES</div>
     <div class="top-actions">
       <div class="system-time" id="sys-time">--:--:--</div>
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.65rem;" onclick="logout()">
@@ -38,8 +38,6 @@
         <div class="rank-chip" id="rank-chip">E</div>
       </div>
       <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:6px;" id="rank-label">Rango: Aprendiz</div>
-
-      <div id="medals-display" style="display:flex;gap:6px;margin-bottom:8px;font-family:var(--font-mono);font-size:0.75rem;"></div>
 
       <div id="medals-display" style="display:flex;gap:6px;margin-bottom:8px;font-family:var(--font-mono);font-size:0.75rem;"></div>
 
@@ -120,6 +118,17 @@
       <div class="nav-arrow" style="color:var(--accent-purple);">▶</div>
     </button>
 
+    <!-- Botón de Recomendaciones (visible para todos) -->
+    <button class="nav-btn" style="border-color:rgba(0,212,100,0.3);background:rgba(0,212,100,0.04);" onclick="openModal('modal-recomendaciones')">
+      <div class="nav-icon">💡</div>
+      <div class="nav-text">
+        <div class="nav-title" style="color:#00d464;">ENVIAR RECOMENDACIÓN</div>
+        <div class="nav-desc">Sugiere mejoras o reporta problemas</div>
+      </div>
+      <div class="nav-arrow" style="color:#00d464;">▶</div>
+    </button>
+
+    <!-- Botones solo admin (nico57) -->
     <button class="nav-btn purple-nav" id="btn-all-players" style="display:none;" onclick="openModal('modal-allplayers')">
       <div class="nav-icon">👥</div>
       <div class="nav-text">
@@ -182,9 +191,7 @@
       <div class="modal-title" style="color:var(--accent-gold);">▶ FICHA DE PERSONAJE</div>
       <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
     </div>
-    <div class="modal-body" id="profile-body">
-      <!-- Filled by JS -->
-    </div>
+    <div class="modal-body" id="profile-body"></div>
   </div>
 </div>
 
@@ -197,9 +204,7 @@
       <div class="modal-title">▶ REGISTRO DE LOGROS</div>
       <button class="modal-close" onclick="closeModal('modal-achievements')">✕</button>
     </div>
-    <div class="modal-body" id="achievements-body">
-      <!-- Filled by JS -->
-    </div>
+    <div class="modal-body" id="achievements-body"></div>
   </div>
 </div>
 
@@ -214,8 +219,61 @@
       <div class="modal-title" style="color:var(--accent-purple);">▶ CLASIFICACIÓN GLOBAL</div>
       <button class="modal-close" onclick="closeModal('modal-leaderboard')">✕</button>
     </div>
-    <div class="modal-body" id="leaderboard-body">
-      <!-- Filled by JS -->
+    <div class="modal-body" id="leaderboard-body"></div>
+  </div>
+</div>
+
+<!-- ── RECOMENDACIONES MODAL ── -->
+<div class="modal-overlay hidden" id="modal-recomendaciones">
+  <div class="modal-box">
+    <div class="corner-tl" style="border-color:#00d464"></div>
+    <div class="corner-tr" style="border-color:#00d464"></div>
+    <div class="corner-bl" style="border-color:#00d464"></div>
+    <div class="corner-br" style="border-color:#00d464"></div>
+    <div class="modal-header">
+      <div class="modal-title" style="color:#00d464;">💡 ENVIAR RECOMENDACIÓN</div>
+      <button class="modal-close" onclick="closeModal('modal-recomendaciones')">✕</button>
+    </div>
+    <div class="modal-body" id="recomendaciones-body">
+      <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);margin-bottom:18px;line-height:1.6;padding:12px;background:rgba(0,212,100,0.05);border:1px solid rgba(0,212,100,0.15);border-radius:8px;">
+        📲 Tu mensaje llegará directamente al administrador por <strong style="color:#00d464;">WhatsApp</strong>.<br>
+        Puedes sugerir nuevas preguntas, reportar errores o pedir mejoras.
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="input-group">
+          <label class="input-label">// Tipo de recomendación</label>
+          <select class="input-field" id="rec-tipo" style="cursor:pointer;">
+            <option value="sugerencia">💡 Sugerencia de mejora</option>
+            <option value="error">🐛 Reportar un error</option>
+            <option value="pregunta">📝 Sugerir nueva pregunta</option>
+            <option value="otro">💬 Otro</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">// Tu mensaje</label>
+          <textarea
+            id="rec-mensaje"
+            rows="5"
+            class="input-field"
+            style="resize:vertical;min-height:100px;"
+            placeholder="Escribe aquí tu recomendación o mensaje..."
+          ></textarea>
+        </div>
+
+        <button
+          class="btn"
+          style="background:linear-gradient(135deg,rgba(0,100,40,0.6),rgba(0,212,100,0.4));border:1px solid rgba(0,212,100,0.4);color:#00d464;width:100%;font-size:0.8rem;"
+          onclick="enviarRecomendacion()"
+        >
+          💬 ENVIAR POR WHATSAPP
+        </button>
+
+        <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted);text-align:center;">
+          Se abrirá WhatsApp con tu mensaje pre-escrito al admin.
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -299,7 +357,6 @@
 
 <script src="app.js"></script>
 <script>
-  // ── Auth guard ──
   const user = requireAuth();
   if (user) init();
 
@@ -309,47 +366,44 @@
     setTimeout(checkAnnouncements, 1500);
   }
 
-  // ── Update HUD ──
   function updateHUD() {
     const u = Auth.getCurrentUser();
     if (!u) return;
     const rank = Progress.getRank(u.level);
-    const pct = Progress.xpPercent(u);
+    const pct  = Progress.xpPercent(u);
 
-    document.getElementById('level-badge').textContent = u.level;
-    document.getElementById('player-name').textContent = u.displayName;
-    document.getElementById('rank-chip').textContent = 'Rng.' + rank.rank;
-    document.getElementById('rank-chip').style.color = rank.color;
+    document.getElementById('level-badge').textContent  = u.level;
+    document.getElementById('player-name').textContent  = u.displayName;
+    document.getElementById('rank-chip').textContent    = 'Rng.' + rank.rank;
+    document.getElementById('rank-chip').style.color    = rank.color;
     document.getElementById('rank-chip').style.borderColor = rank.color;
-    document.getElementById('rank-label').textContent = 'Rango: ' + rank.label;
-    document.getElementById('xp-bar').style.width = pct + '%';
-    document.getElementById('xp-label').textContent = u.xp + ' / ' + xpNecesaria(u.level) + ' XP';
+    document.getElementById('rank-label').textContent   = 'Rango: ' + rank.label;
+    document.getElementById('xp-bar').style.width       = pct + '%';
+    document.getElementById('xp-label').textContent     = u.xp + ' / ' + xpNecesaria(u.level) + ' XP';
 
-    // Stats
-    document.getElementById('stat-correct').textContent = u.totalCorrect || 0;
-    document.getElementById('stat-total').textContent = u.totalAnswered || 0;
-    document.getElementById('stat-streak').textContent = u.streak || 0;
-    document.getElementById('stat-totalxp').textContent = u.totalXP || 0;
+    document.getElementById('stat-correct').textContent  = u.totalCorrect  || 0;
+    document.getElementById('stat-total').textContent    = u.totalAnswered  || 0;
+    document.getElementById('stat-streak').textContent   = u.streak        || 0;
+    document.getElementById('stat-totalxp').textContent  = u.totalXP       || 0;
 
-    // Medals
-    const medals = u.medals || { gold: 0, silver: 0, bronze: 0 };
+    const medals  = u.medals || { gold:0, silver:0, bronze:0 };
     const medalEl = document.getElementById('medals-display');
     if (medalEl) {
       let html = '';
-      if (medals.gold > 0)   html += `<span title="Medallas de oro">🥇×${medals.gold}</span>`;
+      if (medals.gold   > 0) html += `<span title="Medallas de oro">🥇×${medals.gold}</span>`;
       if (medals.silver > 0) html += `<span title="Medallas de plata">🥈×${medals.silver}</span>`;
       if (medals.bronze > 0) html += `<span title="Medallas de bronce">🥉×${medals.bronze}</span>`;
       medalEl.innerHTML = html;
     }
-    // Botones admin — solo visibles para nico
-    const isAdmin = u.username === 'nico';
+
+    // Botones admin — solo visibles para nico57
+    const isAdmin = Auth.isAdmin(u);
     ['btn-season-reset','btn-all-players','btn-announcements','btn-ban-panel'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.style.display = isAdmin ? '' : 'none';
     });
   }
 
-  // ── Clock ──
   function startClock() {
     function tick() {
       const now = new Date();
@@ -361,14 +415,14 @@
   }
 
   // ── Modals ──
-  function openModal(id) {
+  async function openModal(id) {
     Sound.click();
-    if (id === 'modal-profile') renderProfile();
-    if (id === 'modal-achievements') renderAchievements();
-    if (id === 'modal-leaderboard') renderLeaderboard();
-    if (id === 'modal-allplayers') renderAllPlayers();
+    if (id === 'modal-profile')       renderProfile();
+    if (id === 'modal-achievements')  renderAchievements();
+    if (id === 'modal-leaderboard')   renderLeaderboard();
+    if (id === 'modal-allplayers')    renderAllPlayers();
     if (id === 'modal-announcements') renderAnnouncementsAdmin();
-    if (id === 'modal-ban') renderBanPanel();
+    if (id === 'modal-ban')           await renderBanPanel();
     document.getElementById(id).classList.remove('hidden');
   }
 
@@ -376,12 +430,36 @@
     document.getElementById(id).classList.add('hidden');
   }
 
-  // Close modal on overlay click
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.classList.add('hidden');
     });
   });
+
+  // ── Recomendaciones ──
+  function enviarRecomendacion() {
+    const tipo    = document.getElementById('rec-tipo').value;
+    const mensaje = document.getElementById('rec-mensaje').value.trim();
+    if (!mensaje) { Notify.error('✗ Escribe tu mensaje antes de enviar.'); return; }
+
+    const tipoLabel = {
+      sugerencia: '💡 Sugerencia',
+      error:      '🐛 Error reportado',
+      pregunta:   '📝 Nueva pregunta sugerida',
+      otro:       '💬 Otro'
+    }[tipo] || tipo;
+
+    const textoCompleto = `[${tipoLabel}]\n${mensaje}`;
+    const result = Recomendaciones.enviar(textoCompleto);
+
+    if (result.ok) {
+      Notify.success('✓ Abriendo WhatsApp...');
+      document.getElementById('rec-mensaje').value = '';
+      setTimeout(() => closeModal('modal-recomendaciones'), 800);
+    } else {
+      Notify.error('✗ ' + result.error);
+    }
+  }
 
   // ── Profile Render ──
   function renderProfile() {
@@ -393,7 +471,7 @@
     const subjectBars = Object.entries(SUBJECTS).map(([key, sub]) => {
       const s = subStats[key] || { answered: 0, correct: 0 };
       const pct = s.answered ? Math.round((s.correct / s.answered) * 100) : 0;
-      const barColors = { math: '#4dcfff', reading: '#c77dff', english: '#00ff88', science: '#ff8c5a', sociales: '#ffd700' };
+      const barColors = { math:'#4dcfff', reading:'#c77dff', english:'#00ff88', science:'#ff8c5a', sociales:'#ffd700' };
       return `
         <div class="subject-bar-row">
           <div class="subject-bar-label">${sub.icon} ${sub.label}</div>
@@ -413,7 +491,6 @@
           ◆ ${rank.label} · Rango ${rank.rank}
         </div>
       </div>
-
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-header">Estadísticas</div>
         <div class="stat-row"><span class="stat-key">Nivel</span><span class="stat-val">${u.level}</span></div>
@@ -424,18 +501,14 @@
         <div class="stat-row"><span class="stat-key">Racha Máx.</span><span class="stat-val" style="color:var(--accent-orange)">${u.maxStreak || 0}</span></div>
         <div class="stat-row"><span class="stat-key">Logros</span><span class="stat-val" style="color:var(--accent-gold)">${(u.achievements || []).length} / ${ACHIEVEMENTS.length}</span></div>
       </div>
-
       <div class="panel">
         <div class="panel-header">Progreso por Materia</div>
         <div style="padding:12px 16px;">${subjectBars}</div>
-      </div>
-    `;
+      </div>`;
 
-    // Animate bars
     setTimeout(() => {
       document.querySelectorAll('.subject-bar-fill').forEach(b => {
-        const w = b.style.width;
-        b.style.width = '0';
+        const w = b.style.width; b.style.width = '0';
         requestAnimationFrame(() => { b.style.width = w; });
       });
     }, 100);
@@ -445,7 +518,6 @@
   function renderAchievements() {
     const u = Auth.getCurrentUser();
     const unlocked = u.achievements || [];
-
     const list = ACHIEVEMENTS.map(ach => {
       const done = unlocked.includes(ach.id);
       return `
@@ -458,42 +530,31 @@
           ${done ? '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--accent-gold);">✓</div>' : ''}
         </div>`;
     }).join('');
-
     document.getElementById('achievements-body').innerHTML = `
       <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);margin-bottom:16px;">
         Desbloqueados: <span style="color:var(--accent-gold)">${unlocked.length}</span> / ${ACHIEVEMENTS.length}
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">${list}</div>
-    `;
+      <div style="display:flex;flex-direction:column;gap:8px;">${list}</div>`;
   }
 
-  // ── Leaderboard Render (async - Firebase) ──
+  // ── Leaderboard Render ──
   async function renderLeaderboard() {
     const currentUser = Auth.getCurrentUser();
     const body = document.getElementById('leaderboard-body');
-
-    body.innerHTML = `
-      <div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">
-        <div class="loader-ring" style="width:30px;height:30px;margin:0 auto 12px;"></div>
-        Conectando con el servidor...
-      </div>`;
-
+    body.innerHTML = `<div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);"><div class="loader-ring" style="width:30px;height:30px;margin:0 auto 12px;"></div>Conectando con el servidor...</div>`;
     const top = await Leaderboard.getTop10();
-    const podium = ['🥇', '🥈', '🥉'];
-    const podiumColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
-
+    const podium = ['🥇','🥈','🥉'];
+    const podiumColors = ['#ffd700','#c0c0c0','#cd7f32'];
     const rows = top.map((p, i) => {
       const isCurrent = p.username === currentUser.username;
-      const medals = p.medals || { gold: 0, silver: 0, bronze: 0 };
+      const medals = p.medals || { gold:0, silver:0, bronze:0 };
       const medalBadges = [
-        medals.gold   > 0 ? `🥇${medals.gold > 1 ? '×'+medals.gold : ''}` : '',
+        medals.gold   > 0 ? `🥇${medals.gold   > 1 ? '×'+medals.gold   : ''}` : '',
         medals.silver > 0 ? `🥈${medals.silver > 1 ? '×'+medals.silver : ''}` : '',
         medals.bronze > 0 ? `🥉${medals.bronze > 1 ? '×'+medals.bronze : ''}` : '',
       ].filter(Boolean).join(' ');
-
-      const topStyle = i < 3 ? `border-left: 3px solid ${podiumColors[i]};` : '';
+      const topStyle = i < 3 ? `border-left:3px solid ${podiumColors[i]};` : '';
       const cls = `leaderboard-row ${i < 3 ? 'top-'+(i+1) : ''} ${isCurrent ? 'current-user' : ''}`;
-
       return `
         <div class="${cls}" style="${topStyle}">
           <div class="rank-number" style="${i<3?'color:'+podiumColors[i]+';font-size:1.1rem;':''}">${podium[i] || (i+1)}</div>
@@ -505,25 +566,15 @@
           <div class="player-score" style="${i<3?'color:'+podiumColors[i]+';':''}">${p.totalXP} XP</div>
         </div>`;
     }).join('');
-
-    const empty = top.length === 0 ? `
-      <div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">
-        Nadie en el ranking aún.<br>¡Sé el primero!
-      </div>` : '';
-
-    const isOnline = navigator.onLine;
     body.innerHTML = `
       <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">
-        ${isOnline ? '🌐 Ranking global en tiempo real' : '📴 Sin conexión — datos locales'}
+        ${navigator.onLine ? '🌐 Ranking global en tiempo real' : '📴 Sin conexión — datos locales'}
       </div>
-      <div class="leaderboard-row" style="opacity:0.4;font-size:0.65rem;padding:6px 16px;">
-        <div>#</div><div>JUGADOR</div><div>NVL</div><div>XP</div>
-      </div>
-      ${rows}${empty}
-    `;
+      <div class="leaderboard-row" style="opacity:0.4;font-size:0.65rem;padding:6px 16px;"><div>#</div><div>JUGADOR</div><div>NVL</div><div>XP</div></div>
+      ${rows}${top.length === 0 ? '<div style="text-align:center;padding:40px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">Nadie en el ranking aún.<br>¡Sé el primero!</div>' : ''}`;
   }
 
-  // ── Check announcements on load ──
+  // ── Check announcements ──
   async function checkAnnouncements() {
     const u = Auth.getCurrentUser();
     if (!u) return;
@@ -574,36 +625,43 @@
   }
 
   // ── Ban Panel ──
-  function renderBanPanel() {
+  async function renderBanPanel() {
     const body = document.getElementById('ban-body');
-    const users = Auth.getAllUsers().filter(u => u.username !== 'nico');
-    body.innerHTML = `
-      <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">${users.length} usuario(s) registrados</div>
-      ${users.map(u => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;background:${u.banned?'rgba(255,68,68,0.05)':'rgba(0,0,0,0.2)'};border:1px solid ${u.banned?'#ff4444':'var(--border-dim)'};border-radius:4px;">
-          <div style="flex:1;">
-            <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary);">${u.displayName}</div>
-            <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);">@${u.username} · Nv.${u.level} · ${u.banned?'<span style="color:#ff6666;">BANEADO</span>':'Activo'}</div>
-          </div>
-          ${u.banned
-            ? `<button onclick="doUnban('${u.username}')" style="background:rgba(0,255,136,0.1);border:1px solid #00ff88;color:#00ff88;font-size:0.7rem;padding:6px 10px;cursor:pointer;border-radius:3px;">✓ DESBANEAR</button>`
-            : `<button onclick="doBan('${u.username}')" style="background:rgba(255,68,68,0.1);border:1px solid #ff4444;color:#ff6666;font-size:0.7rem;padding:6px 10px;cursor:pointer;border-radius:3px;">🚫 BANEAR</button>`
-          }
-        </div>`).join('')}
-    `;
+    body.innerHTML = '<div style="text-align:center;padding:20px;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);">Cargando...</div>';
+    const users   = Auth.getAllUsers().filter(u => u.username !== ADMIN_USERNAME);
+    const banData = await Auth.getBannedList();
+    let rows = '';
+    if (users.length === 0) {
+      rows = '<div style="text-align:center;padding:30px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted);">No hay usuarios registrados aun.</div>';
+    } else {
+      users.forEach(u => {
+        const fbBanned = banData[u.username] && banData[u.username].banned === true;
+        const isBanned = fbBanned || u.banned;
+        const bg  = isBanned ? 'rgba(255,68,68,0.05)' : 'rgba(0,0,0,0.2)';
+        const brd = isBanned ? '#ff4444' : 'var(--border-dim)';
+        const banLabel = isBanned
+          ? '<span style="color:#ff6666;">BANEADO' + (fbBanned ? ' (global)' : ' (local)') + '</span>'
+          : '<span style="color:#00ff88;">Activo</span>';
+        const actionBtn = isBanned
+          ? `<button onclick="doUnban('${u.username}')" style="background:rgba(0,255,136,0.1);border:1px solid #00ff88;color:#00ff88;font-size:0.7rem;padding:6px 10px;cursor:pointer;border-radius:3px;">DESBANEAR</button>`
+          : `<button onclick="doBan('${u.username}')" style="background:rgba(255,68,68,0.1);border:1px solid #ff4444;color:#ff6666;font-size:0.7rem;padding:6px 10px;cursor:pointer;border-radius:3px;">BANEAR</button>`;
+        rows += `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;background:${bg};border:1px solid ${brd};border-radius:4px;"><div style="flex:1;"><div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-primary);">${u.displayName}</div><div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);">@${u.username} Nv.${u.level} ${banLabel}</div></div>${actionBtn}</div>`;
+      });
+    }
+    body.innerHTML = '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">' + users.length + ' usuario(s) — ban verificado en Firebase</div>' + rows;
   }
 
-  function doBan(username) {
-    if (!confirm('¿Banear a ' + username + '?')) return;
-    const result = Auth.banUser(username, Auth.getCurrentUser());
-    if (result.ok) { Notify.success('🚫 Usuario baneado.'); renderBanPanel(); }
-    else Notify.error('✗ ' + result.error);
+  async function doBan(username) {
+    if (!confirm('Banear a @' + username + '? No podra iniciar sesion desde ningun dispositivo.')) return;
+    const result = await Auth.banUser(username, Auth.getCurrentUser());
+    if (result.ok) { Notify.success('Usuario baneado en todos los dispositivos.'); renderBanPanel(); }
+    else Notify.error(result.error);
   }
 
-  function doUnban(username) {
-    const result = Auth.unbanUser(username, Auth.getCurrentUser());
-    if (result.ok) { Notify.success('✓ Usuario desbaneado.'); renderBanPanel(); }
-    else Notify.error('✗ ' + result.error);
+  async function doUnban(username) {
+    const result = await Auth.unbanUser(username, Auth.getCurrentUser());
+    if (result.ok) { Notify.success('Usuario desbaneado.'); renderBanPanel(); }
+    else Notify.error(result.error);
   }
 
   // ── All Players Render ──
@@ -618,9 +676,10 @@
     const rows = all.map((p, i) => {
       const isCurrent = p.username === currentUser.username;
       const medals = p.medals || {gold:0,silver:0,bronze:0};
-      const medalBadges = [medals.gold>0?`🥇${medals.gold>1?'×'+medals.gold:''}`:''
-        ,medals.silver>0?`🥈${medals.silver>1?'×'+medals.silver:''}`:''
-        ,medals.bronze>0?`🥉${medals.bronze>1?'×'+medals.bronze:''}`:''
+      const medalBadges = [
+        medals.gold   > 0 ? `🥇${medals.gold   > 1 ? '×'+medals.gold   : ''}` : '',
+        medals.silver > 0 ? `🥈${medals.silver > 1 ? '×'+medals.silver : ''}` : '',
+        medals.bronze > 0 ? `🥉${medals.bronze > 1 ? '×'+medals.bronze : ''}` : '',
       ].filter(Boolean).join(' ');
       const posLabel = i < 3 ? podium[i] : `#${i+1}`;
       const posColor = i < 3 ? podiumColors[i] : (isCurrent ? 'var(--accent-cyan)' : 'var(--text-muted)');
@@ -644,7 +703,7 @@
   // ── Season Reset ──
   function confirmSeasonReset() {
     const u = Auth.getCurrentUser();
-    if (u.username !== 'nico') { Notify.error('✗ No tienes permisos.'); return; }
+    if (!Auth.isAdmin(u)) { Notify.error('✗ No tienes permisos.'); return; }
     Sound.click();
     document.getElementById('modal-reset').classList.remove('hidden');
   }
@@ -653,24 +712,20 @@
     const btn = document.getElementById('btn-reset-confirm');
     btn.disabled = true;
     btn.textContent = '⏳ Procesando...';
-
     const result = await Leaderboard.resetSeason();
-
     if (result.ok) {
       const top3 = result.top3;
       const names = top3.map((p,i)=>['🥇','🥈','🥉'][i]+' '+p.displayName).join(', ');
       closeModal('modal-reset');
-      Notify.success(`✓ Temporada reseteada. Medallas otorgadas: ${names}`);
+      Notify.success(`✓ Temporada reseteada. Medallas: ${names}`);
       updateHUD();
     } else {
-      Notify.error('✗ Error al resetear: ' + result.error);
+      Notify.error('✗ Error: ' + result.error);
     }
-
     btn.disabled = false;
     btn.textContent = '🔄 CONFIRMAR RESET';
   }
 
-  // ── Logout ──
   function logout() {
     Auth.logout();
     window.location.href = 'index.html';
