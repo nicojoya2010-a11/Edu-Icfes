@@ -1,7 +1,7 @@
 /* ============================================
-   NEXUS ACADEMY — app.js  v2.0
+   EDU-ICFES — app.js  v2.1
    Core logic: auth, progress, questions, achievements
-   NEW: 250 questions (50/tema), Season Reset, Top3 Medals
+   Admin: nico57 | Recomendaciones: 3204005807
    ============================================ */
 
 'use strict';
@@ -17,6 +17,9 @@ function xpNecesaria(nivel) {
 function recompensaXP(nivel) {
   return 20 + (nivel * 5);
 }
+
+const ADMIN_USERNAME = 'nico57';
+
 const RANKS = [
   { min: 1,  max: 4,  rank: 'E', label: 'Aprendiz',     color: '#888' },
   { min: 5,  max: 9,  rank: 'D', label: 'Explorador',   color: '#00aaff' },
@@ -155,7 +158,7 @@ const QUESTIONS = [
   { id:105, subject:'english', question:'Which sentence is in Present Perfect?', options:['I went to Paris.','I have been to Paris.','I go to Paris.','I was going to Paris.'], answer:1, explanation:'Present Perfect = have/has + past participle.' },
   { id:106, subject:'english', question:'"Courage" in Spanish means:', options:['crueldad','coraje/valentía','curiosidad','cortesía'], answer:1, explanation:'"Courage" = valentía, coraje.' },
   { id:107, subject:'english', question:'The plural of "child" is:', options:['childs','childes','children','childer'], answer:2, explanation:'"Child" has an irregular plural: children.' },
-  { id:108, subject:'english', question:'Choose the correct question tag: "You are a student, _____?"', options:["aren't you",'is not  you','are you','don\'t you'], answer:0, explanation:'Positive statement → negative tag: aren\'t you.' },
+  { id:108, subject:'english', question:'Choose the correct question tag: "You are a student, _____?"', options:["aren't you",'is not you','are you','don\'t you'], answer:0, explanation:'Positive statement → negative tag: aren\'t you.' },
   { id:109, subject:'english', question:'"I will call you tomorrow" is in:', options:['Simple past','Present continuous','Simple future','Past perfect'], answer:2, explanation:'"Will + verb" forms the simple future.' },
   { id:110, subject:'english', question:'What is the superlative of "good"?', options:['gooder','more good','better','the best'], answer:3, explanation:'"Good" is irregular: good → better → the best.' },
   { id:111, subject:'english', question:'Fill in: "She _____ studying when I arrived."', options:['was','is','were','has been'], answer:0, explanation:'Past continuous for ongoing action in the past: was + -ing.' },
@@ -271,14 +274,14 @@ const QUESTIONS = [
   { id:213, subject:'sociales', question:'¿Cuál es la capital de Colombia?', options:['Medellín','Cali','Bogotá','Barranquilla'], answer:2, explanation:'Bogotá D.C. es la capital de Colombia' },
   { id:214, subject:'sociales', question:'El Río Magdalena es importante porque:', options:['Limita con Venezuela','Es el principal río de Colombia','Es el más largo de América','Nace en el Amazonas'], answer:1, explanation:'El Magdalena es el principal río de Colombia, arteria fluvial histórica del país' },
   { id:215, subject:'sociales', question:'¿Qué es el PIB?', options:['Programa de inversión bancaria','Valor total de bienes y servicios producidos en un país','Partido político','Sistema de impuestos'], answer:1, explanation:'PIB: Producto Interno Bruto — valor total de bienes y servicios en un período dado' },
-  { id:216, subject:'sociales', question:'¿Qué organización fundó el Acuerdo de Paz de Colombia (2016)?', options:['ONU','FARC y Gobierno colombiano','Unión Europea','OEA'], answer:1, explanation:'El Acuerdo de Paz de 2016 fue firmado entre el Gobierno de Colombia y las FARC-EP' },
+  { id:216, subject:'sociales', question:'¿Qué organizaciones firmaron el Acuerdo de Paz de Colombia (2016)?', options:['ONU y Gobierno','FARC y Gobierno colombiano','Unión Europea y Colombia','OEA y FARC'], answer:1, explanation:'El Acuerdo de Paz de 2016 fue firmado entre el Gobierno de Colombia y las FARC-EP' },
   { id:217, subject:'sociales', question:'La Organización de las Naciones Unidas (ONU) fue fundada en:', options:['1919','1939','1945','1950'], answer:2, explanation:'La ONU fue fundada el 24 de octubre de 1945 tras la Segunda Guerra Mundial' },
   { id:218, subject:'sociales', question:'¿Qué es la inflación?', options:['Caída de precios','Aumento sostenido del nivel de precios','Crecimiento económico','Desempleo masivo'], answer:1, explanation:'Inflación: aumento generalizado y sostenido de precios en una economía' },
   { id:219, subject:'sociales', question:'¿Cuál fue el primer país en otorgar el voto a la mujer?', options:['Francia','Reino Unido','Nueva Zelanda','Estados Unidos'], answer:2, explanation:'Nueva Zelanda fue el primer país en otorgar el voto femenino, en 1893' },
   { id:220, subject:'sociales', question:'El Imperio Romano cayó en:', options:['476 d.C.','1453','1492','410 d.C.'], answer:0, explanation:'El Imperio Romano de Occidente cayó en 476 d.C. con la deposición de Rómulo Augústulo' },
   { id:221, subject:'sociales', question:'La Edad Media comprende aproximadamente:', options:['Siglos V–XV','Siglos I–IV','Siglos XV–XVIII','Siglos XVIII–XIX'], answer:0, explanation:'Edad Media: caída de Roma (476) hasta la caída de Constantinopla (1453)' },
   { id:222, subject:'sociales', question:'¿Qué es la globalización?', options:['Solo comercio exterior','Integración mundial de economías, culturas y políticas','Colonización moderna','Migración masiva'], answer:1, explanation:'Globalización: proceso de interdependencia e integración entre países del mundo' },
-  { id:223, subject:'sociales', question:'¿Cuál de estos es un derecho fundamental en Colombia?', options:['Tener automóvil','Derecho a la vida','Derecho a voto (no fundamental)','Tener empleo'], answer:1, explanation:'El derecho a la vida (Art. 11 de la Constitución) es el principal derecho fundamental en Colombia' },
+  { id:223, subject:'sociales', question:'¿Cuál de estos es un derecho fundamental en Colombia?', options:['Tener automóvil','Derecho a la vida','Derecho a voto','Tener empleo'], answer:1, explanation:'El derecho a la vida (Art. 11 de la Constitución) es el principal derecho fundamental en Colombia' },
   { id:224, subject:'sociales', question:'La región Caribe colombiana limita al norte con:', options:['Venezuela','Panamá','El Mar Caribe','Ecuador'], answer:2, explanation:'La región Caribe tiene costa sobre el Mar Caribe al norte' },
   { id:225, subject:'sociales', question:'¿Qué es el Congreso de la República de Colombia?', options:['Poder judicial','Poder ejecutivo','Poder legislativo','Poder electoral'], answer:2, explanation:'El Congreso es el órgano legislativo: Senado + Cámara de Representantes' },
   { id:226, subject:'sociales', question:'La Segunda Guerra Mundial terminó en:', options:['1943','1944','1945','1946'], answer:2, explanation:'La Segunda Guerra Mundial terminó en 1945 (mayo en Europa, septiembre en el Pacífico)' },
@@ -354,8 +357,8 @@ function createUser(username, displayName, password, secQuestion, secAnswer) {
 
 /* ─── AUTH MODULE ────────────────────────────── */
 const Auth = {
-  SESSION_KEY:'nexus_session',
-  USERS_KEY:'nexus_users',
+  SESSION_KEY:'eduicfes_session',
+  USERS_KEY:'eduicfes_users',
 
   getUsers(){ return Storage.get(this.USERS_KEY)||{}; },
   saveUsers(u){ Storage.set(this.USERS_KEY,u); },
@@ -365,6 +368,8 @@ const Auth = {
     if(!s) return null;
     return this.getUsers()[s]||null;
   },
+
+  isAdmin(user){ return user && user.username === ADMIN_USERNAME; },
 
   register(username,displayName,password,secQuestion,secAnswer){
     const users=this.getUsers();
@@ -378,6 +383,38 @@ const Auth = {
     return {ok:true};
   },
 
+  // Login async: verifica ban en Firebase antes de permitir entrada
+  async loginAsync(username, password) {
+    const users = this.getUsers();
+    const user  = users[username];
+    if (!user)                      return { ok:false, error:'Usuario no encontrado.' };
+    if (user.password !== password) return { ok:false, error:'Contraseña incorrecta.' };
+
+    // Verificar ban en Firebase (fuente de verdad global)
+    try {
+      const res  = await fetch(`${FIREBASE_DB_URL}/bans/${username}.json`);
+      const data = await res.json();
+      if (data && data.banned === true) {
+        // Sincronizar ban localmente también
+        user.banned = true;
+        this.saveUsers(users);
+        return { ok:false, error:'⛔ Esta cuenta ha sido suspendida.' };
+      }
+    } catch(e) {
+      // Sin conexión: usar ban local como fallback
+      if (user.banned) return { ok:false, error:'⛔ Esta cuenta ha sido suspendida.' };
+    }
+
+    user.lastLogin = Date.now();
+    user.banned    = false; // limpiar ban local si Firebase dice que no está baneado
+    if (!user.medals) user.medals = { gold:0, silver:0, bronze:0 };
+    this.saveUsers(users);
+    Storage.set(this.SESSION_KEY, username);
+    Leaderboard.pushScore(user);
+    return { ok:true };
+  },
+
+  // login síncrono solo para compatibilidad interna (sin check Firebase)
   login(username,password){
     const users=this.getUsers();
     const user=users[username];
@@ -411,23 +448,41 @@ const Auth = {
     return {ok:true};
   },
 
-  banUser(username,adminUser){
-    if(adminUser.username!=='nico') return {ok:false,error:'Sin permisos.'};
-    const users=this.getUsers();
-    if(!users[username]) return {ok:false,error:'Usuario no encontrado.'};
-    if(username==='nico') return {ok:false,error:'No puedes banearte a ti mismo.'};
-    users[username].banned=true;
-    this.saveUsers(users);
-    return {ok:true};
+  async banUser(username, adminUser) {
+    if (!this.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
+    if (username === ADMIN_USERNAME) return { ok:false, error:'No puedes banearte a ti mismo.' };
+    // Escribir en Firebase — afecta TODOS los dispositivos
+    try {
+      await fetch(`${FIREBASE_DB_URL}/bans/${username}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ banned:true, bannedAt:Date.now(), bannedBy:adminUser.username }),
+      });
+    } catch(e) { console.warn('[Ban] Firebase sin conexión, ban solo local'); }
+    // Sincronizar localStorage local
+    const users = this.getUsers();
+    if (users[username]) { users[username].banned = true; this.saveUsers(users); }
+    return { ok:true };
   },
 
-  unbanUser(username,adminUser){
-    if(adminUser.username!=='nico') return {ok:false,error:'Sin permisos.'};
-    const users=this.getUsers();
-    if(!users[username]) return {ok:false,error:'Usuario no encontrado.'};
-    users[username].banned=false;
-    this.saveUsers(users);
-    return {ok:true};
+  async unbanUser(username, adminUser) {
+    if (!this.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
+    // Borrar de Firebase
+    try {
+      await fetch(`${FIREBASE_DB_URL}/bans/${username}.json`, { method:'DELETE' });
+    } catch(e) { console.warn('[Unban] Firebase sin conexión, desban solo local'); }
+    // Sincronizar localStorage local
+    const users = this.getUsers();
+    if (users[username]) { users[username].banned = false; this.saveUsers(users); }
+    return { ok:true };
+  },
+
+  async getBannedList() {
+    try {
+      const res  = await fetch(`${FIREBASE_DB_URL}/bans.json`);
+      const data = await res.json();
+      return data || {};
+    } catch(e) { return {}; }
   },
 
   logout(){ Storage.remove(this.SESSION_KEY); },
@@ -447,20 +502,20 @@ const Progress = {
     user.xp+=amount;
     user.totalXP+=amount;
     const leveled=[];
-    while (user.xp >= xpNecesaria(user.level)) {
-  user.xp -= xpNecesaria(user.level);
-  user.level += 1;
-  leveled.push(user.level);
-}
+    while(user.xp >= xpNecesaria(user.level)){
+      user.xp -= xpNecesaria(user.level);
+      user.level += 1;
+      leveled.push(user.level);
+    }
     Auth.updateUser(user);
     Leaderboard.pushScore(user);
     return leveled;
   },
 
-  xpForNextLevel(){ return XP_PER_LEVEL; },
- xpPercent(user) {
-  return Math.round((user.xp / xpNecesaria(user.level)) * 100);
-},
+  xpPercent(user){
+    return Math.round((user.xp / xpNecesaria(user.level)) * 100);
+  },
+
   getRank(level){ return RANKS.find(r=>level>=r.min&&level<=r.max)||RANKS[RANKS.length-1]; },
 
   recordAnswer(user,isCorrect,subject){
@@ -615,69 +670,73 @@ const Leaderboard = {
     }
   },
 
-  /* ── SEASON RESET ─────────────────────────────
-     Guarda medallas a los Top 1, 2, 3 antes de resetear
-     Llama desde main.html con adminResetSeason()
-  ───────────────────────────────────────────────*/
+
   async resetSeason(){
     try {
-      // 1. Obtener ranking actual
-      const top=await this.getTop10();
+      const top = await this.getTop10();
+      const medalMap = ['gold','silver','bronze'];
 
-      // 2. Asignar medallas en Firebase
-      const medalMap=['gold','silver','bronze'];
-      for(let i=0;i<Math.min(3,top.length);i++){
-        const p=top[i];
-        const medalType=medalMap[i];
-        // Leer entrada actual
-        const r=await fetch(`${FIREBASE_DB_URL}/leaderboard/${p.username}.json`);
-        const entry=await r.json()||{};
-        entry.medals=entry.medals||{gold:0,silver:0,bronze:0};
-        entry.medals[medalType]=(entry.medals[medalType]||0)+1;
-        await fetch(`${FIREBASE_DB_URL}/leaderboard/${p.username}.json`,{
+      // Asignar medallas Top 3 en Firebase
+      for(let i = 0; i < Math.min(3, top.length); i++){
+        const p = top[i];
+        const medalType = medalMap[i];
+        const r = await fetch(FIREBASE_DB_URL + '/leaderboard/' + p.username + '.json');
+        const entry = await r.json() || {};
+        entry.medals = entry.medals || {gold:0,silver:0,bronze:0};
+        entry.medals[medalType] = (entry.medals[medalType]||0) + 1;
+        await fetch(FIREBASE_DB_URL + '/leaderboard/' + p.username + '.json',{
           method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(entry),
         });
-
-        // También actualizar localStorage si es usuario local
-        const localUsers=Auth.getUsers();
+        const localUsers = Auth.getUsers();
         if(localUsers[p.username]){
-          localUsers[p.username].medals=localUsers[p.username].medals||{gold:0,silver:0,bronze:0};
+          localUsers[p.username].medals = localUsers[p.username].medals || {gold:0,silver:0,bronze:0};
           localUsers[p.username].medals[medalType]++;
           Auth.saveUsers(localUsers);
         }
       }
 
-      // 3. Reset XP/nivel/stats en Firebase (mantener medals)
-      const allRes=await fetch(`${FIREBASE_DB_URL}/leaderboard.json`);
-      const allData=await allRes.json()||{};
-      const resetEntries={};
-      for(const [uname,entry] of Object.entries(allData)){
-        resetEntries[uname]={
-          ...entry,
-          level:1, totalXP:0, totalCorrect:0,
-          updatedAt:Date.now(),
+      // Resetear TODOS los jugadores en Firebase (nivel, XP, stats)
+      const allRes  = await fetch(FIREBASE_DB_URL + '/leaderboard.json');
+      const allData = await allRes.json() || {};
+      const resetEntries = {};
+      for(const uname of Object.keys(allData)){
+        const entry = allData[uname];
+        resetEntries[uname] = {
+          displayName: entry.displayName,
+          username:    entry.username,
+          medals:      entry.medals || {gold:0,silver:0,bronze:0},
+          level:1, xp:0, totalXP:0,
+          totalCorrect:0, totalAnswered:0,
+          streak:0, maxStreak:0, subjectStats:{},
+          updatedAt: Date.now(),
         };
       }
-      await fetch(`${FIREBASE_DB_URL}/leaderboard.json`,{
+      await fetch(FIREBASE_DB_URL + '/leaderboard.json',{
         method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(resetEntries),
       });
 
-      // 4. Reset localStorage de todos los usuarios locales
-      const localUsers=Auth.getUsers();
+      // Señal global de reset para que TODOS los dispositivos la detecten al cargar
+      const resetTimestamp = Date.now();
+      await fetch(FIREBASE_DB_URL + '/season_reset.json',{
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ resetAt: resetTimestamp, by: ADMIN_USERNAME }),
+      });
+      Storage.set('eduicfes_last_reset', resetTimestamp);
+
+      // Resetear localStorage local tambien
+      const localUsers = Auth.getUsers();
       for(const uname of Object.keys(localUsers)){
-        const u=localUsers[uname];
+        const u = localUsers[uname];
         u.level=1; u.xp=0; u.totalXP=0;
         u.totalAnswered=0; u.totalCorrect=0;
-        u.streak=0; u.maxStreak=0;
-        u.subjectStats={};
-        // achievements se mantienen (medallas también)
+        u.streak=0; u.maxStreak=0; u.subjectStats={};
       }
       Auth.saveUsers(localUsers);
 
-      return {ok:true, top3:top.slice(0,3)};
+      return { ok:true, top3: top.slice(0,3) };
     } catch(e){
-      console.error('[Season Reset]',e);
-      return {ok:false, error:e.message};
+      console.error('[Season Reset]', e);
+      return { ok:false, error: e.message };
     }
   },
 };
@@ -685,77 +744,191 @@ const Leaderboard = {
 /* ─── ANNOUNCEMENTS (Firebase) ──────────────────── */
 const Announcements = {
   async publish(text, adminUser) {
-    if (adminUser.username !== 'nico') return { ok:false, error:'Sin permisos.' };
-    if (!text || !text.trim()) return { ok:false, error:'El anuncio no puede estar vacío.' };
+    if (!Auth.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
+    if (!text || !text.trim()) return { ok:false, error:'El anuncio no puede estar vacio.' };
     const entry = { text: text.trim(), author: adminUser.displayName, createdAt: Date.now(), id: Date.now().toString() };
     try {
-      const res = await fetch(`${FIREBASE_DB_URL}/announcements/${entry.id}.json`, {
+      const res = await fetch(FIREBASE_DB_URL + '/announcements/' + entry.id + '.json', {
         method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(entry),
       });
       if(!res.ok) throw new Error('Firebase error');
       return { ok:true };
     } catch(e) {
-      const local = Storage.get('nexus_announcements') || {};
+      const local = Storage.get('eduicfes_announcements') || {};
       local[entry.id] = entry;
-      Storage.set('nexus_announcements', local);
+      Storage.set('eduicfes_announcements', local);
       return { ok:true };
     }
   },
+
+  // Obtener anuncios nuevos (ultimas 48h, no vistos)
   async getNew(user) {
-    const seenKey = 'nexus_seen_' + user.username;
+    const seenKey = 'eduicfes_seen_' + user.username;
     const seen = Storage.get(seenKey) || [];
-    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const since = Date.now() - 48 * 60 * 60 * 1000; // 48h para mayor alcance
     let all = [];
     try {
-      const res = await fetch(`${FIREBASE_DB_URL}/announcements.json`);
+      const res = await fetch(FIREBASE_DB_URL + '/announcements.json');
       if (res.ok) { const data = await res.json(); if (data) all = Object.values(data); }
     } catch(e) {
-      const local = Storage.get('nexus_announcements') || {};
+      const local = Storage.get('eduicfes_announcements') || {};
       all = Object.values(local);
     }
-    return all.filter(a => a.createdAt > since && !seen.includes(a.id)).sort((a,b) => b.createdAt - a.createdAt);
+    return all.filter(a => a.createdAt > since && !seen.includes(a.id))
+              .sort((a,b) => b.createdAt - a.createdAt);
   },
+
   markSeen(user, ids) {
-    const seenKey = 'nexus_seen_' + user.username;
+    const seenKey = 'eduicfes_seen_' + user.username;
     const seen = Storage.get(seenKey) || [];
     Storage.set(seenKey, [...new Set([...seen, ...ids])]);
   },
+
   async delete(id, adminUser) {
-    if (adminUser.username !== 'nico') return { ok:false, error:'Sin permisos.' };
-    try { await fetch(`${FIREBASE_DB_URL}/announcements/${id}.json`, { method:'DELETE' }); }
-    catch(e) { const local = Storage.get('nexus_announcements') || {}; delete local[id]; Storage.set('nexus_announcements', local); }
+    if (!Auth.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
+    try { await fetch(FIREBASE_DB_URL + '/announcements/' + id + '.json', { method:'DELETE' }); }
+    catch(e) {
+      const local = Storage.get('eduicfes_announcements') || {};
+      delete local[id];
+      Storage.set('eduicfes_announcements', local);
+    }
     return { ok:true };
   },
+
   async getAll() {
     try {
-      const res = await fetch(`${FIREBASE_DB_URL}/announcements.json`);
-      if (res.ok) { const data = await res.json(); if (!data) return []; return Object.values(data).sort((a,b) => b.createdAt - a.createdAt); }
+      const res = await fetch(FIREBASE_DB_URL + '/announcements.json');
+      if (res.ok) {
+        const data = await res.json();
+        if (!data) return [];
+        return Object.values(data).sort((a,b) => b.createdAt - a.createdAt);
+      }
     } catch(e) {}
-    const local = Storage.get('nexus_announcements') || {};
+    const local = Storage.get('eduicfes_announcements') || {};
     return Object.values(local).sort((a,b) => b.createdAt - a.createdAt);
   },
+};
+
+/* ─── RECOMENDACIONES (WhatsApp) ─────────────────
+   Numero admin: 3204005807 (Colombia)
+─────────────────────────────────────────────────*/
+const ADMIN_WHATSAPP = '573204005807';
+
+const Recomendaciones = {
+  enviar(texto) {
+    if (!texto || !texto.trim()) return { ok: false, error: 'La recomendacion no puede estar vacia.' };
+    const user = Auth.getCurrentUser();
+    const nombre = user ? user.displayName : 'Anonimo';
+    const mensaje = encodeURIComponent(
+      '*Edu-Icfes - Recomendacion*\n\n' +
+      'Usuario: ' + nombre + '\n' +
+      'Mensaje:\n' + texto.trim()
+    );
+    window.open('https://wa.me/' + ADMIN_WHATSAPP + '?text=' + mensaje, '_blank');
+    return { ok: true };
+  }
 };
 
 /* ─── DOM HELPERS ────────────────────────────── */
 const $=(sel,ctx=document)=>ctx.querySelector(sel);
 const $$=(sel,ctx=document)=>[...ctx.querySelectorAll(sel)];
-function el(tag,classes='',content=''){ const e=document.createElement(tag); if(classes)e.className=classes; if(content)e.innerHTML=content; return e; }
+function el(tag,classes,content){
+  const e=document.createElement(tag);
+  if(classes) e.className=classes;
+  if(content) e.innerHTML=content;
+  return e;
+}
 
 /* ─── REDIRECT HELPERS ───────────────────────── */
-function requireAuth(){
-  const user=Auth.getCurrentUser();
-  if(!user){ window.location.href='index.html'; return null; }
-  return user;
-}
-function redirectIfLoggedIn(){
-  const user=Auth.getCurrentUser();
-  if(user) window.location.href='main.html';
+
+// Verifica ban en Firebase al cargar cualquier pagina protegida
+async function checkBanOnLoad(username) {
+  try {
+    const res  = await fetch(FIREBASE_DB_URL + '/bans/' + username + '.json');
+    const data = await res.json();
+    if (data && data.banned === true) {
+      // Aplicar ban en local y forzar logout
+      const users = Auth.getUsers();
+      if (users[username]) { users[username].banned = true; Auth.saveUsers(users); }
+      Auth.logout();
+      window.location.href = 'index.html?banned=1';
+      return true; // esta baneado
+    }
+  } catch(e) {
+    // Sin conexion: confiar en localStorage
+    const users = Auth.getUsers();
+    if (users[username] && users[username].banned) {
+      Auth.logout();
+      window.location.href = 'index.html?banned=1';
+      return true;
+    }
+  }
+  return false;
 }
 
+// Verifica si hay un reset de temporada nuevo
+async function checkSeasonResetOnLoad(username) {
+  try {
+    const res  = await fetch(FIREBASE_DB_URL + '/season_reset.json');
+    const data = await res.json();
+    if (!data || !data.resetAt) return;
+
+    const lastReset = Storage.get('eduicfes_last_reset') || 0;
+    if (data.resetAt > lastReset) {
+      // Hay un reset nuevo que este dispositivo no ha aplicado
+      const users = Auth.getUsers();
+      if (users[username]) {
+        const u = users[username];
+        u.level=1; u.xp=0; u.totalXP=0;
+        u.totalAnswered=0; u.totalCorrect=0;
+        u.streak=0; u.maxStreak=0; u.subjectStats={};
+        Auth.saveUsers(users);
+      }
+      Storage.set('eduicfes_last_reset', data.resetAt);
+    }
+  } catch(e) {
+    // Sin conexion: no hacer nada
+  }
+}
+
+function requireAuth() {
+  const user = Auth.getCurrentUser();
+  if (!user) { window.location.href = 'index.html'; return null; }
+
+  // Ejecutar checks asincrónicos en background (ban + season reset)
+  checkBanOnLoad(user.username);
+  checkSeasonResetOnLoad(user.username);
+
+  return user;
+}
+
+function redirectIfLoggedIn() {
+  const user = Auth.getCurrentUser();
+  if (user) window.location.href = 'main.html';
+}
+
+// Mostrar mensaje de ban si viene de un kick
+(function checkBannedMessage() {
+  if (window.location.search.includes('banned=1')) {
+    setTimeout(() => {
+      const n = document.getElementById('notification-container');
+      if (n) {
+        const el2 = document.createElement('div');
+        el2.className = 'notification error';
+        el2.innerHTML = '<span>Tu cuenta ha sido suspendida por el administrador.</span>';
+        n.appendChild(el2);
+      }
+    }, 400);
+  }
+})();
+
 /* ─── EXPORT ─────────────────────────────────── */
-Object.assign(window,{
-  Auth,Progress,QuestionEngine,Notify,Sound,Leaderboard,
-  Storage,SUBJECTS,ACHIEVEMENTS,RANKS,QUESTIONS,
-  XP_PER_LEVEL,XP_REWARD,XP_BONUS_STREAK,
-  $,$$,el,requireAuth,redirectIfLoggedIn,
+Object.assign(window, {
+  Auth, Progress, QuestionEngine, Notify, Sound, Leaderboard,
+  Recomendaciones, Announcements, Storage,
+  SUBJECTS, ACHIEVEMENTS, RANKS, QUESTIONS,
+  ADMIN_USERNAME, ADMIN_WHATSAPP, FIREBASE_DB_URL,
+  xpNecesaria, recompensaXP, XP_BONUS_STREAK,
+  $, $$, el, requireAuth, redirectIfLoggedIn,
+  checkBanOnLoad, checkSeasonResetOnLoad,
 });
