@@ -371,16 +371,41 @@ const Auth = {
 
   isAdmin(user){ return user && user.username === ADMIN_USERNAME; },
 
-  register(username,displayName,password,secQuestion,secAnswer){
-    const users=this.getUsers();
-    if(users[username]) return {ok:false,error:'El usuario ya existe.'};
-    if(username.length<3) return {ok:false,error:'Usuario muy corto (mín. 3 caracteres).'};
-    if(password.length<4) return {ok:false,error:'Contraseña muy corta (mín. 4 caracteres).'};
-    if(!secQuestion||!secAnswer) return {ok:false,error:'Debes configurar una pregunta de seguridad.'};
-    users[username]=createUser(username,displayName||username,password,secQuestion,secAnswer);
+  async register(username, displayName, password, secQuestion, secAnswer) {
+    const users = this.getUsers();
+    if (users[username])          return { ok:false, error:'El usuario ya existe.' };
+    if (username.length < 3)      return { ok:false, error:'Usuario muy corto (min. 3 caracteres).' };
+    if (password.length < 4)      return { ok:false, error:'Contrasena muy corta (min. 4 caracteres).' };
+    if (!secQuestion || !secAnswer) return { ok:false, error:'Debes configurar una pregunta de seguridad.' };
+
+    // Verificar en Firebase si el usuario ya existe en otro dispositivo
+    try {
+      const check = await fetch(FIREBASE_DB_URL + '/users/' + username + '/username.json');
+      const exists = await check.json();
+      if (exists) return { ok:false, error:'El usuario ya existe en otro dispositivo.' };
+    } catch(e) { /* sin conexion, continuar */ }
+
+    const newUser = createUser(username, displayName || username, password, secQuestion, secAnswer);
+    users[username] = newUser;
     this.saveUsers(users);
-    Storage.set(this.SESSION_KEY,username);
-    return {ok:true};
+
+    // Guardar perfil publico en Firebase (sin contrasena ni respuesta secreta)
+    try {
+      await fetch(FIREBASE_DB_URL + '/users/' + username + '.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username:    newUser.username,
+          displayName: newUser.displayName,
+          level:       newUser.level,
+          banned:      false,
+          createdAt:   newUser.createdAt,
+        }),
+      });
+    } catch(e) { console.warn('[Register] No se pudo guardar en Firebase:', e.message); }
+
+    Storage.set(this.SESSION_KEY, username);
+    return { ok:true };
   },
 
   // Login async: verifica ban en Firebase antes de permitir entrada
@@ -406,11 +431,27 @@ const Auth = {
     }
 
     user.lastLogin = Date.now();
-    user.banned    = false; // limpiar ban local si Firebase dice que no está baneado
+    user.banned    = false;
     if (!user.medals) user.medals = { gold:0, silver:0, bronze:0 };
     this.saveUsers(users);
     Storage.set(this.SESSION_KEY, username);
     Leaderboard.pushScore(user);
+
+    // Sincronizar perfil en Firebase (por si se registro antes de esta actualizacion)
+    try {
+      await fetch(FIREBASE_DB_URL + '/users/' + username + '.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username:    user.username,
+          displayName: user.displayName,
+          level:       user.level,
+          banned:      false,
+          createdAt:   user.createdAt || Date.now(),
+        }),
+      });
+    } catch(e) { /* sin conexion */ }
+
     return { ok:true };
   },
 
@@ -451,15 +492,20 @@ const Auth = {
   async banUser(username, adminUser) {
     if (!this.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
     if (username === ADMIN_USERNAME) return { ok:false, error:'No puedes banearte a ti mismo.' };
-    // Escribir en Firebase — afecta TODOS los dispositivos
     try {
-      await fetch(`${FIREBASE_DB_URL}/bans/${username}.json`, {
+      // /bans para verificacion en login
+      await fetch(FIREBASE_DB_URL + '/bans/' + username + '.json', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ banned:true, bannedAt:Date.now(), bannedBy:adminUser.username }),
       });
-    } catch(e) { console.warn('[Ban] Firebase sin conexión, ban solo local'); }
-    // Sincronizar localStorage local
+      // /users para que el panel del admin lo muestre
+      await fetch(FIREBASE_DB_URL + '/users/' + username + '/banned.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(true),
+      });
+    } catch(e) { console.warn('[Ban] Firebase sin conexion, ban solo local'); }
     const users = this.getUsers();
     if (users[username]) { users[username].banned = true; this.saveUsers(users); }
     return { ok:true };
@@ -467,11 +513,14 @@ const Auth = {
 
   async unbanUser(username, adminUser) {
     if (!this.isAdmin(adminUser)) return { ok:false, error:'Sin permisos de administrador.' };
-    // Borrar de Firebase
     try {
-      await fetch(`${FIREBASE_DB_URL}/bans/${username}.json`, { method:'DELETE' });
-    } catch(e) { console.warn('[Unban] Firebase sin conexión, desban solo local'); }
-    // Sincronizar localStorage local
+      await fetch(FIREBASE_DB_URL + '/bans/' + username + '.json', { method:'DELETE' });
+      await fetch(FIREBASE_DB_URL + '/users/' + username + '/banned.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(false),
+      });
+    } catch(e) { console.warn('[Unban] Firebase sin conexion, desban solo local'); }
     const users = this.getUsers();
     if (users[username]) { users[username].banned = false; this.saveUsers(users); }
     return { ok:true };
@@ -479,11 +528,12 @@ const Auth = {
 
   async getBannedList() {
     try {
-      const res  = await fetch(`${FIREBASE_DB_URL}/bans.json`);
+      const res  = await fetch(FIREBASE_DB_URL + '/bans.json');
       const data = await res.json();
       return data || {};
     } catch(e) { return {}; }
   },
+
 
   logout(){ Storage.remove(this.SESSION_KEY); },
 
@@ -494,6 +544,29 @@ const Auth = {
   },
 
   getAllUsers(){ return Object.values(this.getUsers()); },
+
+  // Obtener TODOS los usuarios desde Firebase (para el panel del admin)
+  async getAllUsersGlobal() {
+    try {
+      const res  = await fetch(FIREBASE_DB_URL + '/users.json');
+      const data = await res.json();
+      if (!data) return [];
+      // Mezclar con datos locales para tener informacion completa
+      const local = this.getUsers();
+      return Object.values(data).map(fbUser => {
+        const localUser = local[fbUser.username];
+        return {
+          username:    fbUser.username,
+          displayName: fbUser.displayName,
+          level:       localUser ? localUser.level : (fbUser.level || 1),
+          banned:      fbUser.banned || (localUser ? localUser.banned : false),
+        };
+      });
+    } catch(e) {
+      console.warn('[getAllUsersGlobal] Fallback local:', e.message);
+      return this.getAllUsers();
+    }
+  },
 };
 
 /* ─── PROGRESS MODULE ────────────────────────── */
