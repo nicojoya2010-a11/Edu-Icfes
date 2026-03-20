@@ -628,7 +628,7 @@
   async function renderBanPanel() {
     const body = document.getElementById('ban-body');
     body.innerHTML = '<div style="text-align:center;padding:20px;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);">Cargando...</div>';
-    const users   = Auth.getAllUsers().filter(u => u.username !== ADMIN_USERNAME);
+    const users   = (await Auth.getAllUsersGlobal()).filter(u => u.username !== ADMIN_USERNAME);
     const banData = await Auth.getBannedList();
     let rows = '';
     if (users.length === 0) {
@@ -733,4 +733,3 @@
 </script>
 </body>
 </html>
-
