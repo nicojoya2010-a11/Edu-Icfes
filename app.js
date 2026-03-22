@@ -7,7 +7,7 @@
  
 /* ── FIREBASE CONFIG ───────────────────────────── */
 const FB        = 'https://edu-icfesv3-default-rtdb.firebaseio.com';
-const FB_APIKEY = 'AIzaSyC_PLACEHOLDER'; // Reemplaza con tu API Key de Firebase
+const FB_APIKEY = 'AIzaSyDEHmT49o7Jiod2nEvVM1pCL6HB8GIAhE4'; // Reemplaza con tu API Key de Firebase
 const FB_AUTH   = 'https://identitytoolkit.googleapis.com/v1';
 /* ─────────────────────────────────────────────────── */
  
