@@ -162,6 +162,14 @@
         <div class="nav-text"><div class="nav-title">Anuncios <span id="ann-badge" style="color:#27a96d;font-size:.75rem;"></span></div></div>
         <div class="nav-arrow">→</div>
       </a>
+      <button class="nav-item" onclick="openModal('modal-poderes')">
+        <div class="nav-icon" style="font-size:1rem;">⚡</div>
+        <div class="nav-text">
+          <div class="nav-title">Guía de Poderes</div>
+          <div class="nav-desc" style="font-size:.7rem;">Descripción de todos los poderes</div>
+        </div>
+        <div class="nav-arrow">→</div>
+      </button>
       <button class="nav-item" id="btn-dominio" style="display:none;" onclick="openModal('modal-dominio')">
         <div class="nav-icon" style="font-size:1rem;">🔥</div>
         <div class="nav-text">
@@ -240,6 +248,16 @@
         <button class="btn btn-danger" style="flex:1;" id="btn-reset-confirm" onclick="doReset()">Confirmar reset</button>
       </div>
     </div>
+  </div>
+</div>
+ 
+<div class="modal-overlay hidden" id="modal-poderes">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Guía de Poderes</div>
+      <button class="modal-close" onclick="closeModal('modal-poderes')">✕</button>
+    </div>
+    <div class="modal-body" id="poderes-body"></div>
   </div>
 </div>
  
@@ -366,6 +384,7 @@
     if (id==='modal-announcements') renderAnnouncements();
     if (id==='modal-ban')           renderBan();
     if (id==='modal-dominio')       renderDominio();
+    if (id==='modal-poderes')       renderPoderesGuia();
     document.getElementById(id).classList.remove('hidden');
   }
   function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -683,7 +702,101 @@
     else{errEl.textContent=res.error;errEl.classList.add('visible');}
   }
  
-  /* ── RESET ── */
+  /* ── GUÍA DE PODERES ── */
+  function renderPoderesGuia() {
+    const u = Auth.me();
+    const ALL_PODERES = [
+      {
+        cat: '⚔️ Poderes de Duelo — Naruto',
+        items: [
+          { icon:'🌀', name:'Genjutsu',       req:'Nivel 30', origen:'Naruto',          tipo:'Ofensivo',
+            desc:'Altera las opciones que ve el rival, mostrando textos confusos en 2 respuestas. Dura 1 pregunta. El Dominio Simple lo neutraliza.',
+            efecto:'+Desorientas al rival', cargas:'2 por duelo', cd:'4 preguntas' },
+          { icon:'👁️', name:'Sharingan',      req:'Nivel 30', origen:'Naruto',          tipo:'Informativo',
+            desc:'Copia el chakra visual del rival: ves qué opción eligió en esa pregunta antes de responder tú.',
+            efecto:'+Información del rival', cargas:'3 por duelo', cd:'2 preguntas' },
+          { icon:'🛡️', name:'Dominio Simple', req:'Nivel 30', origen:'Jujutsu Kaisen',  tipo:'Defensivo',
+            desc:'Crea un escudo que absorbe el próximo poder ofensivo que te lancen (Genjutsu o Dominio). Se activa una vez y se consume.',
+            efecto:'+Bloqueo de ataque', cargas:'1 por duelo', cd:'5 preguntas' },
+          { icon:'🔥', name:'Dominio Expansión', req:'Nivel 40 + nombre asignado', origen:'Jujutsu Kaisen', tipo:'Ofensivo/Pasivo',
+            desc:'Expande tu dominio personal durante 3 preguntas. Tus puntos aumentan 80% y los del rival bajan 30%. Si ambos lo activan al mismo tiempo, se desencadena el Black Flash.',
+            efecto:'+80% tus pts · −30% rival · 3 preg.', cargas:'1 por duelo', cd:'6 preguntas' },
+        ]
+      },
+      {
+        cat: '⚡ Evento — Black Flash',
+        items: [
+          { icon:'⚡', name:'Black Flash', req:'Automático', origen:'Jujutsu Kaisen', tipo:'Evento especial',
+            desc:'Ocurre cuando ambos jugadores activan su Dominio al mismo tiempo (Dominio Clash). Cancela ambos dominios y genera 1 pregunta con tiempo reducido 50% pero XP ×2.2 si la aciertas.',
+            efecto:'×2.2 XP · −50% tiempo · Sin poderes', cargas:'Automático', cd:'—' },
+        ]
+      },
+      {
+        cat: '🛒 Poderes de Tienda — Re:Zero / Anime',
+        items: [
+          { icon:'👁️‍🗨️', name:'Maldición Persistente', req:'Nivel 20 · 15 🪙', origen:'Jujutsu Kaisen', tipo:'Pasivo ofensivo',
+            desc:'Cada fallo del rival te otorga una marca (máx. 5). Cada marca = +5% XP en tus respuestas. Se cancela si el rival acierta 2 seguidas.',
+            efecto:'+5% XP por marca del rival', cargas:'1 uso', cd:'—' },
+          { icon:'🔄', name:'Energía Inversa',    req:'Nivel 15 · 20 🪙', origen:'Jujutsu Kaisen', tipo:'Defensivo/Pasivo',
+            desc:'Al fallar una pregunta, recuperas el 50% de la XP base. Si fallas dos seguidas, la segunda recuperación baja al 25%.',
+            efecto:'+50% XP al fallar (25% en racha)', cargas:'2 usos', cd:'—' },
+          { icon:'🎲', name:'Factor Bruja',        req:'Nivel 25 · 25 🪙', origen:'Re:Zero',         tipo:'Aleatorio',
+            desc:'Al inicio de cada pregunta del duelo lanza un efecto aleatorio: 80% positivo (+XP, +tiempo, elimina opción incorrecta) y 20% negativo (−XP).',
+            efecto:'Efecto aleatorio por pregunta', cargas:'1 uso', cd:'—' },
+          { icon:'📜', name:'Contrato Vinculante', req:'Nivel 30 · 30 🪙', origen:'Re:Zero',         tipo:'Alto riesgo',
+            desc:'Configuras un sacrificio y una recompensa antes del duelo. Si aciertas 3 preguntas seguidas, obtienes la recompensa (hasta ×3.5 XP + monedas). Si fallas primero, sufres el castigo (−50% XP o perder niveles).',
+            efecto:'Hasta ×3.5 XP o castigo severo', cargas:'1 uso', cd:'—' },
+          { icon:'✨', name:'Bendición del Prodigio', req:'Nivel 100 gratis / 500 🪙', origen:'Re:Zero', tipo:'Legendario',
+            desc:'Las opciones incorrectas se vuelven casi invisibles y la respuesta correcta se selecciona automáticamente. XP a la mitad. Solo 1 uso por día.',
+            efecto:'Auto-respuesta · XP ÷2 · 1/día', cargas:'1 por día', cd:'—' },
+        ]
+      },
+    ];
+ 
+    const colores = {
+      'Ofensivo':'#e05555','Defensivo':'#1673ff','Informativo':'#27a96d',
+      'Pasivo ofensivo':'#9b30ff','Defensivo/Pasivo':'#1673ff','Aleatorio':'#c9ab6e',
+      'Alto riesgo':'#ea00ff','Legendario':'#f59e0b','Ofensivo/Pasivo':'#ea00ff',
+      'Evento especial':'#facc15','Automático':'#facc15'
+    };
+ 
+    document.getElementById('poderes-body').innerHTML = ALL_PODERES.map(cat => `
+      <div style="font-family:var(--mono);font-size:.6rem;color:var(--ink-3);letter-spacing:.15em;text-transform:uppercase;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;">${cat.cat}</div>
+      ${cat.items.map(p => {
+        const color = colores[p.tipo] || 'var(--ink-2)';
+        const reqLevel = parseInt((p.req.match(/Nivel (\d+)/)||[])[1]||0);
+        const bloqueado = reqLevel > 0 && u.level < reqLevel;
+        return `<div style="background:var(--bg-subtle);border:1px solid ${bloqueado?'var(--border)':'var(--border-md)'};border-radius:var(--radius-xs);padding:14px;margin-bottom:10px;opacity:${bloqueado?.55:1};">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="font-size:1.6rem;flex-shrink:0;">${p.icon}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:.95rem;">${p.name} ${bloqueado?'🔒':''}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                <span style="font-family:var(--mono);font-size:.55rem;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--border-md);color:var(--ink-3);">${p.origen}</span>
+                <span style="font-family:var(--mono);font-size:.55rem;padding:2px 7px;border-radius:20px;background:${color}18;border:1px solid ${color}44;color:${color};">${p.tipo}</span>
+                <span style="font-family:var(--mono);font-size:.55rem;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--ink-4);">${p.req}</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:.83rem;color:var(--ink-2);line-height:1.6;margin-bottom:8px;">${p.desc}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+            <div style="background:var(--bg-card);border-radius:var(--radius-xs);padding:6px 8px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:.5rem;color:var(--ink-4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Efecto</div>
+              <div style="font-size:.7rem;font-weight:600;color:${color};">${p.efecto}</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:var(--radius-xs);padding:6px 8px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:.5rem;color:var(--ink-4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Cargas</div>
+              <div style="font-size:.7rem;font-weight:600;color:var(--ink-2);">${p.cargas}</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:var(--radius-xs);padding:6px 8px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:.5rem;color:var(--ink-4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Cooldown</div>
+              <div style="font-size:.7rem;font-weight:600;color:var(--ink-2);">${p.cd}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    `).join('');
+  }
   async function doReset() {
     const btn=document.getElementById('btn-reset-confirm');
     btn.disabled=true; btn.textContent='Procesando...';
