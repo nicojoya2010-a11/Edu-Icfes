@@ -306,16 +306,19 @@ function traducirError(code) {
 }
  
 /* ══════════════════════════════════════════════════
-   AUTH
+   AUTH — 100% Firebase (sin localStorage para progreso)
+   localStorage solo guarda: sesión activa + cache ligero
 ══════════════════════════════════════════════════ */
 const Auth = {
-  SK: 'ei_session',
-  UK: 'ei_users',
+  SK: 'ei_session',      // solo guarda el email del usuario activo
+  _cache: null,          // cache en memoria durante la sesión
  
-  users()       { return Store.get(this.UK) || {}; },
-  saveUsers(u)  { Store.set(this.UK, u); },
-  me()          { const s = Store.get(this.SK); return s ? this.users()[s] || null : null; },
-  isAdmin(u)    { return u?.email?.toLowerCase() === ADMIN || u?.username?.toLowerCase() === ADMIN; },
+  // Guardar en memoria + localStorage liviano (solo email)
+  _setSession(email) { Store.set(this.SK, email); },
+  _getSession()      { return Store.get(this.SK); },
+ 
+  me()       { return this._cache || null; },
+  isAdmin(u) { return u?.email?.toLowerCase() === ADMIN; },
  
   async register(email, displayName, password) {
     email = email.toLowerCase().trim();
@@ -327,61 +330,51 @@ const Auth = {
     if (!fbRes.ok) return fbRes;
  
     const u = newUser(email, displayName.trim(), fbRes.uid);
-    const users = this.users();
-    users[email] = u;
-    this.saveUsers(users);
-    Store.set(this.SK, email);
+    this._cache = u;
+    this._setSession(email);
  
-    // Guardar perfil en Firebase Realtime DB
-    try {
-      await fetch(`${FB}/users/${fbRes.uid}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          email, displayName: u.displayName, uid: fbRes.uid,
-          level:1, banned:false, createdAt: u.createdAt,
-        }),
-      });
-    } catch {}
- 
+    // Guardar TODO en Firebase desde el primer momento
+    await this._saveToFirebase(u);
+    Leaderboard.push(u);
     return { ok:true };
   },
  
   async loginAsync(email, password) {
     email = email.toLowerCase().trim();
  
-    // Autenticar con Firebase Auth
+    // 1. Autenticar con Firebase Auth
     const fbRes = await FBAuth.signIn(email, password);
     if (!fbRes.ok) return fbRes;
  
-    // Cargar o crear perfil local
-    const users = this.users();
-    let u = users[email];
-    if (!u) {
-      // Primera vez en este dispositivo — crear perfil local desde Firebase
-      try {
-        const r = await fetch(`${FB}/users/${fbRes.uid}.json`);
-        const remote = await r.json();
-        if (remote) {
-          u = { ...newUser(email, remote.displayName||email, fbRes.uid), ...remote };
-        } else {
-          u = newUser(email, email.split('@')[0], fbRes.uid);
-        }
-      } catch {
-        u = newUser(email, email.split('@')[0], fbRes.uid);
+    // 2. Cargar progreso SIEMPRE desde Firebase (fuente de verdad)
+    let u = null;
+    try {
+      const r = await fetch(`${FB}/progress/${fbRes.uid}.json`);
+      const remote = await r.json();
+      if (remote && remote.uid) {
+        u = remote;
+        console.log('[EDU-ICFES] ✓ Progreso cargado desde Firebase → Nv.' + remote.level);
       }
+    } catch {}
+ 
+    // 3. Si no existe progreso en Firebase, crear nuevo usuario
+    if (!u) {
+      u = newUser(email, email.split('@')[0], fbRes.uid);
+      await this._saveToFirebase(u);
     }
  
-    // Verificar ban
+    // 4. Verificar ban
     if (u.banned) return { ok:false, error:'⛔ Esta cuenta ha sido suspendida.' };
  
-    // Actualizar datos de sesión
-    u.uid       = fbRes.uid;
+    // 5. Asegurar campos mínimos
+    u.uid      = fbRes.uid;
+    u.email    = email;
+    u.username = email;
     u.lastLogin = Date.now();
     if (!u.medals)           u.medals = { gold:0, silver:0, bronze:0 };
     if (!u.poderesComprados) u.poderesComprados = {};
  
-    // Monedas diarias
+    // 6. Monedas diarias
     const hoy = new Date().toISOString().split('T')[0];
     if ((u.lastLoginDay||'') !== hoy) {
       u.lastLoginDay = hoy;
@@ -389,20 +382,13 @@ const Auth = {
       Store.set('ei_login_coin_notif', '1');
     }
  
-    users[email] = u;
-    this.saveUsers(users);
-    Store.set(this.SK, email);
+    // 7. Guardar en memoria y sesión
+    this._cache = u;
+    this._setSession(email);
  
-    // Sincronizar en segundo plano
-    setTimeout(async () => {
-      try {
-        // Verificar ban remoto
-        const r = await fetch(`${FB}/bans/${fbRes.uid}.json`);
-        const d = await r.json();
-        if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return; }
-      } catch {}
-      Leaderboard.push(Auth.me()||u);
-    }, 100);
+    // 8. Persistir en Firebase y leaderboard
+    await this._saveToFirebase(u);
+    Leaderboard.push(u);
  
     return { ok:true };
   },
@@ -426,14 +412,15 @@ const Auth = {
         body: JSON.stringify(true),
       });
     } catch {}
-    const users = this.users();
-    if (users[email]) { users[email].banned = true; this.saveUsers(users); }
+    // Actualizar cache si es el usuario actual
+    const cached = Auth.me();
+    if (cached?.email === email) { cached.banned = true; Auth._cache = cached; }
     return { ok:true };
   },
  
   async unbanUser(email, admin) {
     if (!this.isAdmin(admin)) return { ok:false, error:'Sin permisos.' };
-    const uid = this.users()[email]?.uid || email;
+    const uid = this.me()?.uid || email;
     try {
       await fetch(`${FB}/bans/${uid}.json`, { method:'DELETE' });
       await fetch(`${FB}/users/${uid}/banned.json`, {
@@ -441,8 +428,8 @@ const Auth = {
         body: JSON.stringify(false),
       });
     } catch {}
-    const users = this.users();
-    if (users[email]) { users[email].banned = false; this.saveUsers(users); }
+    const cached = Auth.me();
+    if (cached?.email === email) { cached.banned = false; Auth._cache = cached; }
     return { ok:true };
   },
  
@@ -451,16 +438,77 @@ const Auth = {
   },
  
   async getAllGlobal() {
+    const resultado = {};
+ 
+    // 1. Leer de /users (siempre ha existido, tiene uid y email)
     try {
-      const r    = await fetch(`${FB}/users.json`);
+      const r = await fetch(`${FB}/users.json`);
       const data = await r.json();
-      if (!data) return [];
-      const local = this.users();
-      return Object.values(data).map(fb => {
-        const loc = local[fb.username];
-        return { username:fb.username, displayName:fb.displayName, level:loc?.level||fb.level||1, banned:fb.banned||loc?.banned||false };
-      });
-    } catch { return Object.values(this.users()); }
+      if (data && typeof data === 'object') {
+        for (const [uid, u] of Object.entries(data)) {
+          if (!u || typeof u !== 'object') continue;
+          resultado[uid] = {
+            uid:         u.uid || uid,
+            username:    u.email || u.username || uid,
+            displayName: u.displayName || 'Sin nombre',
+            level:       u.level || 1,
+            totalXP:     u.totalXP || 0,
+            monedas:     u.monedas || 0,
+            streak:      u.streak || 0,
+            banned:      u.banned || false,
+          };
+        }
+      }
+    } catch(e) { console.warn('[getAllGlobal] /users error:', e); }
+ 
+    // 2. Leer de /progress y sobreescribir con datos más completos
+    try {
+      const r = await fetch(`${FB}/progress.json`);
+      const data = await r.json();
+      if (data && typeof data === 'object') {
+        for (const [uid, u] of Object.entries(data)) {
+          if (!u || typeof u !== 'object' || !u.uid) continue;
+          resultado[u.uid] = {
+            uid:         u.uid,
+            username:    u.email || u.username || u.uid,
+            displayName: u.displayName || resultado[u.uid]?.displayName || 'Sin nombre',
+            level:       u.level || 1,
+            totalXP:     u.totalXP || 0,
+            monedas:     u.monedas || 0,
+            streak:      u.streak || 0,
+            banned:      u.banned || false,
+          };
+        }
+      }
+    } catch(e) { console.warn('[getAllGlobal] /progress error:', e); }
+ 
+    // 3. Leer de /leaderboard como último recurso
+    try {
+      const r = await fetch(`${FB}/leaderboard.json`);
+      const data = await r.json();
+      if (data && typeof data === 'object') {
+        for (const [key, u] of Object.entries(data)) {
+          if (!u || typeof u !== 'object') continue;
+          const uid = u.uid || key;
+          if (!resultado[uid]) {
+            resultado[uid] = {
+              uid:         uid,
+              username:    u.email || u.username || uid,
+              displayName: u.displayName || 'Sin nombre',
+              level:       u.level || 1,
+              totalXP:     u.totalXP || 0,
+              monedas:     u.monedas || 0,
+              streak:      u.streak || 0,
+              banned:      u.banned || false,
+            };
+          }
+        }
+      }
+    } catch(e) { console.warn('[getAllGlobal] /leaderboard error:', e); }
+ 
+    const lista = Object.values(resultado);
+    console.log('[getAllGlobal] encontrados:', lista.length);
+    return lista;
   },
  
   setDominioNombre(nombre) {
@@ -473,7 +521,8 @@ const Auth = {
     this.updateUser(u);
     // Guardar también en Firebase users/
     try {
-      fetch(`${FB}/users/${u.username}/dominioNombre.json`, {
+      const fbKey = u.uid || (u.email||u.username||'').replace(/[.#$[\]]/g,'_');
+      fetch(`${FB}/users/${fbKey}/dominioNombre.json`, {
         method:'PUT', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(nombre.trim()),
       });
@@ -482,42 +531,67 @@ const Auth = {
   },
  
   updateUser(u) {
-    const users = this.users();
-    users[u.username] = u;
-    this.saveUsers(users);
-   // Ya existe este fetch, solo agrega avatar:
-  fetch(`${FB}/progress/${u.username}.json`, {
-    method: 'PATCH',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ level: u.level, totalXP: u.totalXP, displayName: u.displayName, avatar: u.avatar || '' })
-  }).catch(()=>{});
-    // Sincronizar progreso completo a Firebase (sin contraseña)
-    try {
-      fetch(`${FB}/progress/${u.username}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          username:      u.username,
-          displayName:   u.displayName,
-          level:         u.level,
-          xp:            u.xp||0,
-          totalXP:       u.totalXP||0,
-          totalAnswered: u.totalAnswered||0,
-          totalCorrect:  u.totalCorrect||0,
-          streak:        u.streak||0,
-          maxStreak:     u.maxStreak||0,
-          subjectStats:  u.subjectStats||{},
-          achievements:  u.achievements||[],
-          medals:        u.medals||{gold:0,silver:0,bronze:0},
-          duelosJugados: u.duelosJugados||0,
-          duelosGanados: u.duelosGanados||0,
-          dominioNombre: u.dominioNombre||null,
-          updatedAt:     Date.now(),
-        }),
-      });
-    } catch {}
+    // Actualizar cache en memoria
+    this._cache = u;
+    // Guardar en Firebase en segundo plano
+    this._saveToFirebase(u).catch(()=>{});
   },
-  logout()      { Store.remove(this.SK); },
+ 
+  // Guardar progreso completo en Firebase usando UID como clave
+  async _saveToFirebase(u) {
+    if (!u?.uid) {
+      console.warn('[EDU-ICFES] _saveToFirebase: sin uid, abortando', u?.email);
+      return;
+    }
+    const progreso = {
+      uid:              u.uid,
+      email:            u.email || u.username,
+      displayName:      u.displayName,
+      level:            u.level||1,
+      xp:               u.xp||0,
+      totalXP:          u.totalXP||0,
+      totalAnswered:    u.totalAnswered||0,
+      totalCorrect:     u.totalCorrect||0,
+      streak:           u.streak||0,
+      maxStreak:        u.maxStreak||0,
+      subjectStats:     u.subjectStats||{},
+      achievements:     u.achievements||[],
+      medals:           u.medals||{gold:0,silver:0,bronze:0},
+      duelosJugados:    u.duelosJugados||0,
+      duelosGanados:    u.duelosGanados||0,
+      dominioNombre:    u.dominioNombre||null,
+      monedas:          u.monedas||0,
+      correctasHoy:     u.correctasHoy||0,
+      correctasHoyFecha:u.correctasHoyFecha||'',
+      lastLoginDay:     u.lastLoginDay||'',
+      poderesComprados: u.poderesComprados||{},
+      contratoConfig:   u.contratoConfig||null,
+      banned:           u.banned||false,
+      createdAt:        u.createdAt||Date.now(),
+      updatedAt:        Date.now(),
+    };
+    await fetch(`${FB}/progress/${u.uid}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify(progreso),
+    });
+    // También actualizar /users para el admin panel
+    await fetch(`${FB}/users/${u.uid}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        email: u.email||u.username,
+        displayName: u.displayName,
+        level: u.level||1,
+        banned: u.banned||false,
+        uid: u.uid,
+      }),
+    });
+  },
+  logout() {
+    this._cache = null;
+    Store.remove(this.SK);
+  },
  
   setDominioNombre(nombre) {
     const u = this.me();
@@ -653,11 +727,14 @@ const QEngine = {
 ══════════════════════════════════════════════════ */
 const Leaderboard = {
   async push(u) {
+    if (!u) return;
+    // Usar UID como clave si existe, sino email (no exponer correo como clave visible)
+    const key = u.uid || (u.email||u.username||'').replace(/[.#$/[\]]/g,'_');
     try {
-      await fetch(`${FB}/leaderboard/${u.username}.json`, {
+      await fetch(`${FB}/leaderboard/${key}.json`, {
         method:'PUT', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          username:    u.username,
+          username:    u.email || u.username,
           displayName: u.displayName,
           level:       u.level,
           xp:          u.xp||0,
@@ -702,38 +779,90 @@ const Leaderboard = {
  
   async resetSeason() {
     try {
+      // 1. Obtener top 3 para medallas
       const top = await this.getTop(3);
       const medalMap = ['gold','silver','bronze'];
+ 
+      // 2. Dar medallas al top 3 en /progress y /leaderboard
       for (let i=0; i<top.length; i++) {
         const p  = top[i];
         const mt = medalMap[i];
-        const r  = await fetch(`${FB}/leaderboard/${p.username}.json`);
-        const e  = await r.json() || {};
-        e.medals = e.medals || {gold:0,silver:0,bronze:0};
-        e.medals[mt]++;
-        await fetch(`${FB}/leaderboard/${p.username}.json`, {
-          method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(e),
-        });
-        const lu = Auth.users();
-        if (lu[p.username]) { lu[p.username].medals=lu[p.username].medals||{gold:0,silver:0,bronze:0}; lu[p.username].medals[mt]++; Auth.saveUsers(lu); }
+        const uid = p.uid || p.username;
+ 
+        // Actualizar medallas en /progress
+        try {
+          const rp = await fetch(`${FB}/progress/${uid}.json`);
+          const ep = await rp.json() || {};
+          ep.medals = ep.medals || {gold:0,silver:0,bronze:0};
+          ep.medals[mt]++;
+          await fetch(`${FB}/progress/${uid}.json`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(ep),
+          });
+        } catch {}
+ 
+        // Actualizar medallas en /leaderboard
+        try {
+          const rl = await fetch(`${FB}/leaderboard/${uid}.json`);
+          const el = await rl.json() || {};
+          el.medals = el.medals || {gold:0,silver:0,bronze:0};
+          el.medals[mt]++;
+          await fetch(`${FB}/leaderboard/${uid}.json`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(el),
+          });
+        } catch {}
       }
-      // Reset all
-      const all = await fetch(`${FB}/leaderboard.json`).then(r=>r.json()).catch(()=>({})) || {};
-      const reset = {};
-      for (const [k,v] of Object.entries(all)) {
-        reset[k] = { ...v, level:1, xp:0, totalXP:0, totalCorrect:0, totalAnswered:0, streak:0, maxStreak:0, subjectStats:{}, updatedAt:Date.now() };
+ 
+      // 3. Resetear /progress de TODOS los jugadores (fuente de verdad)
+      const allProgress = await fetch(`${FB}/progress.json`).then(r=>r.json()).catch(()=>({})) || {};
+      const resetProgress = {};
+      for (const [uid, u] of Object.entries(allProgress)) {
+        if (!u || typeof u !== 'object' || !u.uid) continue;
+        resetProgress[uid] = {
+          ...u,
+          level:1, xp:0, totalXP:0,
+          totalAnswered:0, totalCorrect:0,
+          streak:0, maxStreak:0,
+          subjectStats:{},
+          updatedAt: Date.now(),
+        };
       }
-      await fetch(`${FB}/leaderboard.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(reset) });
-      // Señal global
+      await fetch(`${FB}/progress.json`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(resetProgress),
+      });
+ 
+      // 4. Resetear /leaderboard
+      const allLB = await fetch(`${FB}/leaderboard.json`).then(r=>r.json()).catch(()=>({})) || {};
+      const resetLB = {};
+      for (const [k,v] of Object.entries(allLB)) {
+        resetLB[k] = { ...v, level:1, xp:0, totalXP:0, totalCorrect:0, totalAnswered:0, streak:0, maxStreak:0, subjectStats:{}, updatedAt:Date.now() };
+      }
+      await fetch(`${FB}/leaderboard.json`, {
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(resetLB),
+      });
+ 
+      // 5. Señal global para que todos los dispositivos se enteren
       const ts = Date.now();
-      await fetch(`${FB}/season_reset.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ at:ts, by:ADMIN }) });
+      await fetch(`${FB}/season_reset.json`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ at:ts, by:ADMIN }),
+      });
       Store.set('ei_last_reset', ts);
-      // Local reset
-      const lu = Auth.users();
-      for (const u of Object.values(lu)) { u.level=1;u.xp=0;u.totalXP=0;u.totalAnswered=0;u.totalCorrect=0;u.streak=0;u.maxStreak=0;u.subjectStats={}; }
-      Auth.saveUsers(lu);
+ 
+      // 6. Resetear cache local del admin
+      const me = Auth.me();
+      if (me) {
+        me.level=1; me.xp=0; me.totalXP=0;
+        me.totalAnswered=0; me.totalCorrect=0;
+        me.streak=0; me.maxStreak=0; me.subjectStats={};
+        Auth._cache = me;
+      }
+ 
       return { ok:true, top3:top };
-    } catch(e) { return { ok:false, error:e.message }; }
+    } catch(e) {
+      console.error('[resetSeason]', e);
+      return { ok:false, error:e.message };
+    }
   },
 };
  
@@ -1142,8 +1271,10 @@ const Notify = {
    GUARDS + SEASON CHECK
 ══════════════════════════════════════════════════ */
 async function checkBan(username) {
+  const u = Auth.me();
+  const uid = u?.uid || username;
   try {
-    const r = await fetch(`${FB}/bans/${username}.json`);
+    const r = await fetch(`${FB}/bans/${uid}.json`);
     const d = await r.json();
     if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return true; }
   } catch {}
@@ -1158,26 +1289,114 @@ async function checkSeasonReset(username) {
     const last = Store.get('ei_last_reset') || 0;
     if (d.at > last) {
       const users = Auth.users();
-      if (users[username]) {
-        const u = users[username];
+      const u = Auth.me();
+      if (u) {
         u.level=1;u.xp=0;u.totalXP=0;u.totalAnswered=0;u.totalCorrect=0;u.streak=0;u.maxStreak=0;u.subjectStats={};
-        Auth.saveUsers(users);
+        Auth.updateUser(u);
       }
       Store.set('ei_last_reset', d.at);
     }
   } catch {}
 }
  
-function requireAuth() {
-  const u = Auth.me();
-  if (!u) { window.location.href = 'index.html'; return null; }
-  checkBan(u.username);
-  checkSeasonReset(u.username);
-  return u;
+async function checkAdminEdit(u) {
+  if (!u?.uid) return;
+  try {
+    const r = await fetch(`${FB}/admin_edits/${u.uid}.json`);
+    const edit = await r.json();
+    if (!edit || !edit.ts) return;
+    // Solo aplicar si es más reciente que el último check
+    const lastCheck = parseInt(Store.get('ei_last_admin_edit_'+u.uid)||'0');
+    if (edit.ts <= lastCheck) return;
+    Store.set('ei_last_admin_edit_'+u.uid, String(edit.ts));
+    // Aplicar cambios al cache en memoria
+    const cached = Auth.me();
+    if (!cached) return;
+    if (edit.level   !== undefined) cached.level   = edit.level;
+    if (edit.totalXP !== undefined) cached.totalXP = edit.totalXP;
+    if (edit.xp      !== undefined) cached.xp      = edit.xp||0;
+    if (edit.monedas !== undefined) cached.monedas = edit.monedas;
+    if (edit.streak  !== undefined) cached.streak  = edit.streak;
+    Auth._cache = cached;
+    // Notificar al jugador
+    console.log('[EDU-ICFES] Admin actualizó tu perfil → Nv.'+edit.level);
+    // Si hay Notify disponible, mostrar mensaje
+    if (typeof Notify !== 'undefined') {
+      setTimeout(()=>Notify.show('⚡ Tu perfil fue actualizado por el admin','levelup',4000), 1500);
+    }
+    // Recargar HUD si estamos en main
+    if (typeof updateHUD === 'function') setTimeout(updateHUD, 200);
+  } catch {}
 }
  
-function redirectIfLogged() {
-  if (Auth.me()) window.location.href = 'main.html';
+async function requireAuth() {
+  // 1. Si hay cache en memoria, usarlo directamente
+  if (Auth._cache) {
+    checkAdminEdit(Auth._cache);
+    return Auth._cache;
+  }
+ 
+  // 2. Hay email guardado en localStorage?
+  const email = Auth._getSession();
+  if (!email) { window.location.href = 'index.html'; return null; }
+ 
+  // 3. Buscar uid en /users por email (puede estar como clave uid o como clave email)
+  let uid = null;
+  try {
+    const r    = await fetch(`${FB}/users.json`);
+    const data = await r.json();
+    if (data && typeof data === 'object') {
+      // Buscar por email dentro del objeto
+      for (const [key, u] of Object.entries(data)) {
+        if (u && (u.email === email || u.username === email)) {
+          uid = u.uid || key;
+          break;
+        }
+      }
+    }
+  } catch {}
+ 
+  // 4. Si tenemos uid, cargar progreso desde /progress
+  if (uid) {
+    try {
+      const rp   = await fetch(`${FB}/progress/${uid}.json`);
+      const prog = await rp.json();
+      if (prog && prog.uid) {
+        Auth._cache = { ...prog, email, username: email };
+        checkAdminEdit(Auth._cache);
+        return Auth._cache;
+      }
+    } catch {}
+  }
+ 
+  // 5. Intentar cargar desde /leaderboard si no hay /progress
+  try {
+    const rl   = await fetch(`${FB}/leaderboard.json`);
+    const data = await rl.json();
+    if (data) {
+      for (const [key, u] of Object.entries(data)) {
+        if (u && (u.email === email || u.username === email)) {
+          Auth._cache = { ...u, email, username: email, uid: u.uid || key };
+          return Auth._cache;
+        }
+      }
+    }
+  } catch {}
+ 
+  // 6. No se pudo restaurar — redirigir al login
+  console.warn('[requireAuth] No se pudo restaurar sesión para:', email);
+  Auth.logout();
+  window.location.href = 'index.html';
+  return null;
+}
+ 
+async function redirectIfLogged() {
+  // Verificar si hay sesión guardada
+  const email = Auth._getSession();
+  if (!email) return;
+  // Intentar restaurar — si funciona, redirigir
+  const u = await requireAuth();
+  if (u) window.location.href = 'main.html';
 }
  
 // Mostrar mensaje de ban en login
@@ -1198,47 +1417,27 @@ const $$ = (s,c=document) => [...c.querySelectorAll(s)];
 /* ══════════════════════════════════════════════════
    EXPORT
 ══════════════════════════════════════════════════ */
+// Sincronizar todos los usuarios locales al leaderboard de Firebase
+async function syncAllLocalToLeaderboard() {
+  // Leer todos los progresos de Firebase y empujar al leaderboard
+  try {
+    const r    = await fetch(`${FB}/progress.json`);
+    const data = await r.json();
+    if (!data) return 0;
+    const all = Object.values(data);
+    for (const u of all) { await Leaderboard.push(u); }
+    return all.length;
+  } catch { return 0; }
+}
+ 
 Object.assign(window, {
   Auth, Progress, QEngine, Leaderboard, Announcements, Sound, Notify, Store,
+  syncAllLocalToLeaderboard,
   Economy, SHOP_ITEMS, CONTRATO_OPCIONES, SHOP_EFFECTS, Contrato,
   SUBJECTS, ACHIEVEMENTS, RANKS, QUESTIONS, ADMIN, FB,
   xpNecesaria, recompensaXP, XP_STREAK_BONUS,
-  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset,
+  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset, checkAdminEdit,
 });
  
 // Verificación de carga correcta
 console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB);
-const AvatarUpload = {
-  // Convierte imagen local a Base64 (200x200 max) y la guarda en el usuario
-  async upload(file) {
-    return new Promise((res, rej) => {
-      const img = new Image(), fr = new FileReader();
-      fr.onload = e => { img.src = e.target.result; };
-      fr.onerror = rej;
-      img.onload = () => {
-        const s = Math.min(200/img.width, 200/img.height, 1);
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.82));
-      };
-      img.onerror = rej;
-      fr.readAsDataURL(file);
-    });
-  },
-  async save(file) {
-    if (file.size > 5*1024*1024) { Notify.error('Imagen muy grande. Máx 5 MB.'); return null; }
-    const b64 = await this.upload(file);
-    const u = Auth.me();
-    u.avatar = b64;
-    Auth.updateUser(u);
-    // Guardar en Firebase Realtime DB
-    const uid = u.uid || u.username;
-    fetch(`${FB}/users/${uid}/avatar.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(b64)
-    }).catch(()=>{});
-    return b64;
-  }
-};
