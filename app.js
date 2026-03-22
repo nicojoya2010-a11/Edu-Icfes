@@ -7,7 +7,7 @@
  
 /* ── FIREBASE CONFIG ───────────────────────────── */
 const FB        = 'https://edu-icfesv3-default-rtdb.firebaseio.com';
-const FB_APIKEY = 'AIzaSyDEHmT49o7Jiod2nEvVM1pCL6HB8GIAhE4'; // Reemplaza con tu API Key de Firebase
+const FB_APIKEY = 'AIzaSyC_PLACEHOLDER'; // Reemplaza con tu API Key de Firebase
 const FB_AUTH   = 'https://identitytoolkit.googleapis.com/v1';
 /* ─────────────────────────────────────────────────── */
  
@@ -344,6 +344,8 @@ const Auth = {
       });
     } catch {}
  
+    // Push al leaderboard desde el registro
+    Leaderboard.push(u);
     return { ok:true };
   },
  
@@ -393,16 +395,17 @@ const Auth = {
     this.saveUsers(users);
     Store.set(this.SK, email);
  
-    // Sincronizar en segundo plano
+    // Push inmediato al leaderboard (para que aparezca en ranking)
+    Leaderboard.push(u);
+ 
+    // Verificar ban en segundo plano
     setTimeout(async () => {
       try {
-        // Verificar ban remoto
         const r = await fetch(`${FB}/bans/${fbRes.uid}.json`);
         const d = await r.json();
         if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return; }
       } catch {}
-      Leaderboard.push(Auth.me()||u);
-    }, 100);
+    }, 200);
  
     return { ok:true };
   },
@@ -457,10 +460,25 @@ const Auth = {
       if (!data) return [];
       const local = this.users();
       return Object.values(data).map(fb => {
-        const loc = local[fb.username];
-        return { username:fb.username, displayName:fb.displayName, level:loc?.level||fb.level||1, banned:fb.banned||loc?.banned||false };
+        // Buscar en local por email o uid
+        const loc = local[fb.email] || local[fb.username] || {};
+        return {
+          username:    fb.email || fb.username,
+          displayName: fb.displayName || loc.displayName || 'Sin nombre',
+          level:       loc.level || fb.level || 1,
+          banned:      fb.banned || loc.banned || false,
+          uid:         fb.uid || '',
+        };
       });
-    } catch { return Object.values(this.users()); }
+    } catch {
+      // Fallback: usuarios locales
+      return Object.values(this.users()).map(u=>({
+        username: u.email || u.username,
+        displayName: u.displayName,
+        level: u.level||1,
+        banned: u.banned||false,
+      }));
+    }
   },
  
   setDominioNombre(nombre) {
@@ -647,11 +665,14 @@ const QEngine = {
 ══════════════════════════════════════════════════ */
 const Leaderboard = {
   async push(u) {
+    if (!u) return;
+    // Usar UID como clave si existe, sino email (no exponer correo como clave visible)
+    const key = u.uid || (u.email||u.username||'').replace(/[.#$/[\]]/g,'_');
     try {
-      await fetch(`${FB}/leaderboard/${u.username}.json`, {
+      await fetch(`${FB}/leaderboard/${key}.json`, {
         method:'PUT', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          username:    u.username,
+          username:    u.email || u.username,
           displayName: u.displayName,
           level:       u.level,
           xp:          u.xp||0,
@@ -701,15 +722,17 @@ const Leaderboard = {
       for (let i=0; i<top.length; i++) {
         const p  = top[i];
         const mt = medalMap[i];
-        const r  = await fetch(`${FB}/leaderboard/${p.username}.json`);
+        const pkey = p.uid || (p.username||'').replace(/[.#$/[\]]/g,'_');
+        const r  = await fetch(`${FB}/leaderboard/${pkey}.json`);
         const e  = await r.json() || {};
         e.medals = e.medals || {gold:0,silver:0,bronze:0};
         e.medals[mt]++;
-        await fetch(`${FB}/leaderboard/${p.username}.json`, {
+        await fetch(`${FB}/leaderboard/${pkey}.json`, {
           method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(e),
         });
         const lu = Auth.users();
-        if (lu[p.username]) { lu[p.username].medals=lu[p.username].medals||{gold:0,silver:0,bronze:0}; lu[p.username].medals[mt]++; Auth.saveUsers(lu); }
+        const lk = p.username;
+        if (lu[lk]) { lu[lk].medals=lu[lk].medals||{gold:0,silver:0,bronze:0}; lu[lk].medals[mt]++; Auth.saveUsers(lu); }
       }
       // Reset all
       const all = await fetch(`${FB}/leaderboard.json`).then(r=>r.json()).catch(()=>({})) || {};
@@ -1136,8 +1159,10 @@ const Notify = {
    GUARDS + SEASON CHECK
 ══════════════════════════════════════════════════ */
 async function checkBan(username) {
+  const u = Auth.me();
+  const uid = u?.uid || username;
   try {
-    const r = await fetch(`${FB}/bans/${username}.json`);
+    const r = await fetch(`${FB}/bans/${uid}.json`);
     const d = await r.json();
     if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return true; }
   } catch {}
@@ -1192,8 +1217,19 @@ const $$ = (s,c=document) => [...c.querySelectorAll(s)];
 /* ══════════════════════════════════════════════════
    EXPORT
 ══════════════════════════════════════════════════ */
+// Sincronizar todos los usuarios locales al leaderboard de Firebase
+async function syncAllLocalToLeaderboard() {
+  const users = Auth.users();
+  const all   = Object.values(users);
+  for (const u of all) {
+    await Leaderboard.push(u);
+  }
+  return all.length;
+}
+ 
 Object.assign(window, {
   Auth, Progress, QEngine, Leaderboard, Announcements, Sound, Notify, Store,
+  syncAllLocalToLeaderboard,
   Economy, SHOP_ITEMS, CONTRATO_OPCIONES, SHOP_EFFECTS, Contrato,
   SUBJECTS, ACHIEVEMENTS, RANKS, QUESTIONS, ADMIN, FB,
   xpNecesaria, recompensaXP, XP_STREAK_BONUS,
@@ -1201,4 +1237,4 @@ Object.assign(window, {
 });
  
 // Verificación de carga correcta
-console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB);
+console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB)
