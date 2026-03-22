@@ -531,7 +531,8 @@ async function elegir(sel,correct,porTiempo=false) {
   const isOk=sel===correct, q=window._q;
   document.querySelectorAll('.answer-option').forEach((btn,i)=>{
     btn.disabled=true; btn.style.pointerEvents='none';
-    if(i===correct) btn.classList.add('correct');
+    // Solo resaltar correcta si el jugador respondió (no por tiempo agotado)
+    if(i===correct && !porTiempo) btn.classList.add('correct');
     if(i===sel&&!isOk) btn.classList.add('incorrect');
   });
  
@@ -869,9 +870,11 @@ function aplicarGenjutsuLocal(fakes) {
  
 function efectoSharingan() {
   PS.sharinganOn=true;
+  // Resetear timestamp para detectar SOLO respuestas del rival posteriores a activación
+  _lastShareTs = Date.now() - 100;
   flashPoder('👁️ Sharingan activo','#e05555');
   Sound.beep(550,.1,'sine',.1); setTimeout(()=>Sound.beep(660,.12,'sine',.1),100);
-  dNotif('👁️ Sharingan: verás la opción del rival','ok');
+  dNotif('👁️ Sharingan activo — espera a que el rival responda','ok');
 }
  
 function mostrarSharinganInfo(optIdx) {
@@ -982,11 +985,21 @@ function actualizarHUD() {
 ══════════════════════════════════════════ */
 async function finalizarDuelo() {
   clearInterval(pollingId); clearInterval(timerLoop);
-  await new Promise(r=>setTimeout(r,2500));
+  // Esperar que el rival también termine de subir su último puntaje
+  await new Promise(r=>setTimeout(r,3500));
   try {
     const res=await fetch(`${DUELO_DB}/${salaId}.json`);
     const data=await res.json();
-    if(data){const esJ1=data.jugador1.uid===batUser.uid||data.jugador1.username===batUser.username;ptsRival=esJ1?(data.jugador2?.puntos||0):data.jugador1.puntos;}
+    if(data){
+      const esJ1=data.jugador1.uid===batUser.uid||data.jugador1.username===batUser.username;
+      // Leer puntos del rival — pueden venir como número directo o como objeto {puntos:N}
+      const rivalData = esJ1 ? data.jugador2 : data.jugador1;
+      const rivalPtsFirebase = typeof rivalData?.puntos === 'number'
+        ? rivalData.puntos
+        : (rivalData?.puntos?.puntos || 0);
+      // Usar el mayor entre lo que tenemos local y lo de Firebase (evitar 0 por timing)
+      ptsRival = Math.max(ptsRival, rivalPtsFirebase);
+    }
   } catch {}
   const resultado=ptsMe>ptsRival?'victoria':ptsMe<ptsRival?'derrota':'empate';
   const xpMult=resultado==='victoria'?2:resultado==='empate'?1:.5;
