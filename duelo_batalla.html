@@ -313,6 +313,11 @@ async function init() {
     document.getElementById('hud-rival-nivel').textContent  = rival?'Nv.'+rival.nivel:'';
     document.getElementById('hud-qnum').textContent         = '1/'+sala.numPregs;
  
+    // Inicializar timestamps para no procesar eventos anteriores al entrar
+    if (sala.dominio_activo?.ts)  _lastDominioTs  = sala.dominio_activo.ts - 1;
+    if (sala.genjutsu_activo?.ts) _lastGenjutsuTs = sala.genjutsu_activo.ts - 1;
+    if (sala.sharingan_j1?.ts)    _lastShareTs    = Math.max(sala.sharingan_j1.ts||0, sala.sharingan_j2?.ts||0) - 1;
+ 
     // Inicializar poderes
     PS.init(batUser);
     SP.init(batUser);
@@ -691,14 +696,15 @@ function startPolling() {
  
       // Dominio del rival
       const dom=data.dominio_activo;
-      if(dom&&dom.ts>_lastDominioTs&&dom.activadoPor!==batUser.username){
+      const dominioEsMio = dom && (dom.activadoPor===batUser.uid || dom.activadoPorUsername===batUser.username || dom.activadoPor===batUser.username);
+      if(dom && dom.ts>_lastDominioTs && dom.vigente && !dominioEsMio){
         _lastDominioTs=dom.ts;
         if(PS.domSimpleOn){
           PS.domSimpleOn=false; document.getElementById('ds-bar').classList.add('hidden');
           dNotif('🛡️ Dominio Simple bloqueó el Dominio rival','ok');
         } else {
           mostrarOverlayDominio(dom.nombre||'Expansión de Dominio',false);
-          dNotif('🔥 '+dom.nombre+' activo — −30% tus puntos','err');
+          dNotif('🔥 '+(dom.nombre||'Dominio')+' activo — −30% tus puntos','err');
         }
       }
  
@@ -844,7 +850,7 @@ async function efectoGenjutsu() {
   try {
     await fetch(`${DUELO_DB}/${salaId}/genjutsu_activo.json`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({target,fakeOpts:fakes,ts:Date.now(),activadoPor:batUser.username}),
+      body:JSON.stringify({target,fakeOpts:fakes,ts:Date.now(),activadoPor:batUser.uid,activadoPorUsername:batUser.username}),
     });
   } catch {}
 }
@@ -890,7 +896,8 @@ async function efectoDominio() {
   try {
     const r=await fetch(`${DUELO_DB}/${salaId}/dominio_activo.json`);
     const rivalDom=await r.json();
-    if(rivalDom&&rivalDom.vigente&&rivalDom.activadoPor!==batUser.username){
+    const rivalDomEsMio=rivalDom&&(rivalDom.activadoPor===batUser.uid||rivalDom.activadoPorUsername===batUser.username||rivalDom.activadoPor===batUser.username);
+    if(rivalDom&&rivalDom.vigente&&!rivalDomEsMio){
       await fetch(`${DUELO_DB}/${salaId}/black_flash.json`,{
         method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({ts:Date.now(),activadoPor:'clash'}),
@@ -908,7 +915,7 @@ async function efectoDominio() {
   try {
     await fetch(`${DUELO_DB}/${salaId}/dominio_activo.json`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({activadoPor:batUser.username,nombre,vigente:true,ts:Date.now()}),
+      body:JSON.stringify({activadoPor:batUser.uid,activadoPorUsername:batUser.username,nombre,vigente:true,ts:Date.now()}),
     });
     const rivalKey=esJ1?'jugador2':'jugador1';
     if(ptsRival>0){
