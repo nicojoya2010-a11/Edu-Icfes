@@ -1,3 +1,7 @@
+
+Main · HTML
+Copiar
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,7 +13,7 @@
     /* Títulos del menú centrados */
     .nav-title { text-align: center; }
     .nav-desc  { text-align: center; }
-
+ 
     /* Menú desplegable */
     .submenu {
       display: none; flex-direction: column; gap: 5px;
@@ -24,7 +28,7 @@
 </head>
 <body>
 <div id="notification-container"></div>
-
+ 
 <div id="levelup-overlay" class="levelup-overlay hidden">
   <div class="levelup-particles" id="lu-particles"></div>
   <div class="levelup-title">Nivel alcanzado</div>
@@ -32,9 +36,9 @@
   <div class="levelup-rank" id="lu-rank"></div>
   <button class="btn btn-outline" style="margin-top:20px;color:var(--ink);border-color:rgba(22,115,255,0.4);" onclick="closeLU()">Continuar →</button>
 </div>
-
+ 
 <div class="page-wrapper">
-
+ 
   <div class="topbar">
     <div class="topbar-brand">Edu-Icfes</div>
     <div style="display:flex;align-items:center;gap:10px;">
@@ -43,7 +47,7 @@
       <button class="btn btn-ghost btn-sm" onclick="logout()">Salir</button>
     </div>
   </div>
-
+ 
   <!-- Player card -->
   <div class="card card-accent animate-in" style="margin-bottom:10px;">
     <div class="player-card">
@@ -62,7 +66,7 @@
       <div class="level-badge"><div id="p-level">1</div><small>nivel</small></div>
     </div>
   </div>
-
+ 
   <!-- Stats -->
   <div class="stats-grid animate-in" style="animation-delay:.05s;margin-bottom:14px;">
     <div class="stat-item"><div class="stat-icon">🎯</div><div class="stat-val" id="s-correct">0</div><div class="stat-lbl">Correctas</div></div>
@@ -70,11 +74,11 @@
     <div class="stat-item"><div class="stat-icon">🔥</div><div class="stat-val" id="s-streak">0</div><div class="stat-lbl">Racha</div></div>
     <div class="stat-item"><div class="stat-icon">⭐</div><div class="stat-val" id="s-xp">0</div><div class="stat-lbl">XP Total</div></div>
   </div>
-
+ 
   <!-- Menú principal -->
   <div class="section-label animate-in" style="animation-delay:.08s;">Acciones</div>
   <div class="nav-menu animate-in" style="animation-delay:.1s;margin-bottom:14px;">
-
+ 
     <a href="ejercicios.html" class="nav-item amber">
       <div class="nav-icon">✏️</div>
       <div class="nav-text">
@@ -83,7 +87,7 @@
       </div>
       <div class="nav-arrow">→</div>
     </a>
-
+ 
     <a href="mascota.html" class="nav-item">
       <div class="nav-icon" id="pet-icon">🥚</div>
       <div class="nav-text">
@@ -92,7 +96,7 @@
       </div>
       <div class="nav-arrow">→</div>
     </a>
-
+ 
     <a href="tienda.html" class="nav-item">
       <div class="nav-icon">🛒</div>
       <div class="nav-text">
@@ -101,7 +105,7 @@
       </div>
       <div class="nav-arrow">→</div>
     </a>
-
+ 
     <a href="duelo_lobby.html" class="nav-item" id="btn-duelo" style="display:none;">
       <div class="nav-icon">⚔️</div>
       <div class="nav-text">
@@ -110,7 +114,7 @@
       </div>
       <div class="nav-arrow">→</div>
     </a>
-
+ 
     <button class="nav-item" onclick="openModal('modal-leaderboard')">
       <div class="nav-icon">🌐</div>
       <div class="nav-text">
@@ -119,7 +123,7 @@
       </div>
       <div class="nav-arrow">→</div>
     </button>
-
+ 
     <!-- Más opciones desplegable -->
     <button class="nav-item" onclick="toggleMas()" id="btn-mas">
       <div class="nav-icon">☰</div>
@@ -129,7 +133,7 @@
       </div>
       <div class="nav-arrow" id="mas-arrow">↓</div>
     </button>
-
+ 
     <div class="submenu" id="submenu-mas">
       <button class="nav-item" onclick="openModal('modal-profile')">
         <div class="nav-icon" style="font-size:1rem;">👤</div>
@@ -155,7 +159,7 @@
         <div class="nav-arrow">→</div>
       </button>
     </div>
-
+ 
     <!-- Admin -->
     <button class="nav-item" id="btn-allplayers" style="display:none;" onclick="openModal('modal-allplayers')">
       <div class="nav-icon">👥</div>
@@ -177,9 +181,9 @@
       <div class="nav-text"><div class="nav-title" style="color:var(--red);">Reset temporada</div><div class="nav-desc">Admin</div></div>
       <div class="nav-arrow">→</div>
     </button>
-
+ 
   </div>
-
+ 
   <!-- Entrenamiento rápido -->
   <div class="section-label animate-in" style="animation-delay:.12s;">Entrenamiento rápido</div>
   <div class="subject-pills animate-in" style="animation-delay:.14s;margin-bottom:10px;">
@@ -189,9 +193,9 @@
     <a href="ejercicios.html?s=science"  class="subject-pill">⚗ Ciencias</a>
     <a href="ejercicios.html?s=sociales" class="subject-pill">🌎 Sociales</a>
   </div>
-
+ 
 </div>
-
+ 
 <!-- MODALES -->
 <div class="modal-overlay hidden" id="modal-profile">
   <div class="modal-box"><div class="modal-header"><div class="modal-title">Mi Perfil</div><button class="modal-close" onclick="closeModal('modal-profile')">✕</button></div><div class="modal-body" id="profile-body"></div></div>
@@ -226,15 +230,15 @@
     </div>
   </div>
 </div>
-
+ 
 <script src="preguntas.js"></script>
 <script src="app.js"></script>
 <script>
   const u = requireAuth();
   if (u) init();
-
+ 
   function init() { updateHUD(); startClock(); setTimeout(checkAnn, 1500); }
-
+ 
   function updateHUD() {
     const u = Auth.me(); if (!u) return;
     const rank   = Progress.getRank(u.level);
@@ -250,14 +254,14 @@
     document.getElementById('s-total').textContent   = u.totalAnswered||0;
     document.getElementById('s-streak').textContent  = u.streak||0;
     document.getElementById('s-xp').textContent      = u.totalXP||0;
-
+ 
     // Monedas
     const coins = u.monedas||0;
     const hudCoins = document.getElementById('hud-coins');
     const tiendaDesc = document.getElementById('tienda-desc');
     if (hudCoins) hudCoins.textContent = coins;
     if (tiendaDesc) tiendaDesc.textContent = coins+' 🪙 monedas';
-
+ 
     // Mascota
     const pet     = u.pet||{stage:0,dayStreak:0};
     const petInfo = (typeof Pet!=='undefined') ? Pet.getStageInfo(pet.stage) : {emoji:'🥚',name:'Huevo'};
@@ -265,11 +269,11 @@
     const petDesc = document.getElementById('pet-desc');
     if (petIcon) petIcon.textContent = petInfo.emoji;
     if (petDesc) petDesc.textContent = petInfo.name+' · '+(pet.dayStreak||0)+' días de racha';
-
+ 
     // Nivel 20+
     const d = document.getElementById('btn-duelo');
     if (d) d.style.display = u.level>=20 ? '' : 'none';
-
+ 
     // Nivel 40+ dominio
     const bd = document.getElementById('btn-dominio');
     if (bd) {
@@ -279,19 +283,19 @@
         document.getElementById('btn-dominio-desc').textContent  = 'Tu poder definitivo está activo';
       }
     }
-
+ 
     // Admin
     const isAdmin = Auth.isAdmin(u);
     ['btn-allplayers','btn-announcements','btn-ban','btn-reset'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.style.display=isAdmin?'':'none';
     });
   }
-
+ 
   function startClock() {
     const tick=()=>{ document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); };
     tick(); setInterval(tick,10000);
   }
-
+ 
   async function checkAnn() {
     const u=Auth.me(); if(!u) return;
     try {
@@ -308,7 +312,7 @@
       if(badge) badge.textContent=fresh2.length>0?'🔔'+fresh2.length:'';
     } catch {}
   }
-
+ 
   function toggleMas() {
     const menu=document.getElementById('submenu-mas');
     const arrow=document.getElementById('mas-arrow');
@@ -317,7 +321,7 @@
     arrow.textContent=open?'↓':'↑';
     Sound.click();
   }
-
+ 
   function openModal(id) {
     Sound.click();
     if (id==='modal-profile')       renderProfile();
@@ -333,7 +337,7 @@
   document.querySelectorAll('.modal-overlay').forEach(o=>{
     o.addEventListener('click',e=>{ if(e.target===o) o.classList.add('hidden'); });
   });
-
+ 
   /* ── PERFIL ── */
   function renderProfile() {
     const u=Auth.me(), rank=Progress.getRank(u.level);
@@ -366,7 +370,7 @@
       <div class="card"><div class="card-inner"><div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;">Por materia</div><div style="padding:12px 16px;">${bars}</div></div></div>`;
     setTimeout(()=>{ document.querySelectorAll('.subject-bar-fill').forEach(b=>{ const w=b.style.width; b.style.width='0'; requestAnimationFrame(()=>{ b.style.transition='width .7s ease'; b.style.width=w; }); }); },100);
   }
-
+ 
   /* ── LOGROS ── */
   function renderAchievements() {
     const u=Auth.me(), done=u.achievements||[];
@@ -380,12 +384,16 @@
         </div>`).join('')}
       </div>`;
   }
-
+ 
   /* ── LEADERBOARD ── */
   async function renderLeaderboard() {
     const body=document.getElementById('leaderboard-body');
     const me=Auth.me();
     body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+ 
+    // Asegurar que el usuario actual esté en el ranking
+    Leaderboard.push(me).catch(()=>{});
+ 
     const top=await Leaderboard.getTop(10);
     const medals=['🥇','🥈','🥉'];
     const rows=top.map((p,i)=>`
@@ -398,11 +406,15 @@
     body.innerHTML=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);margin-bottom:10px;">${navigator.onLine?'Tiempo real · Firebase':'Sin conexión'}</div>
       <div class="card"><div class="card-inner"><div class="leaderboard-row" style="opacity:.4;font-size:.65rem;border-bottom:1px solid var(--border);"><div>#</div><div>Jugador</div><div>Nvl</div><div>XP</div></div>${rows||'<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--ink-3);">Sin datos aún.</div>'}</div></div>`;
   }
-
+ 
   /* ── ALL PLAYERS ── */
   async function renderAllPlayers() {
     const body=document.getElementById('allplayers-body'), me=Auth.me();
     body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+ 
+    // Sincronizar usuarios locales primero
+    await syncAllLocalToLeaderboard().catch(()=>{});
+ 
     const all=await Leaderboard.getAll();
     const myPos=all.findIndex(p=>p.username===me.username);
     const medals=['🥇','🥈','🥉'];
@@ -410,7 +422,7 @@
     body.innerHTML=`${myPos>=0?`<div style="font-family:var(--mono);font-size:.72rem;color:var(--ink-2);margin-bottom:10px;">Tu posición: <strong>#${myPos+1}</strong> de ${all.length}</div>`:''}
       <div class="card"><div class="card-inner"><div class="leaderboard-row" style="opacity:.4;font-size:.65rem;border-bottom:1px solid var(--border);"><div>#</div><div>Jugador</div><div>Nvl</div><div>XP</div></div>${rows||'<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--ink-3);">Sin datos.</div>'}</div></div>`;
   }
-
+ 
   /* ── ANUNCIOS ADMIN ── */
   async function renderAnnouncements() {
     const body=document.getElementById('announcements-body');
@@ -433,7 +445,7 @@
     else Notify.error(res.error);
   }
   async function deleteAnn(id) { await Announcements.delete(id,Auth.me()); Notify.success('Eliminado.'); renderAnnouncements(); }
-
+ 
   /* ── BAN ── */
   async function renderBan() {
     const body=document.getElementById('ban-body');
@@ -453,7 +465,7 @@
   }
   async function doBan(un) { if(!confirm('¿Banear @'+un+'?'))return; const r=await Auth.banUser(un,Auth.me()); if(r.ok){Notify.success('Baneado.');renderBan();}else Notify.error(r.error); }
   async function doUnban(un) { const r=await Auth.unbanUser(un,Auth.me()); if(r.ok){Notify.success('Desbaneado.');renderBan();}else Notify.error(r.error); }
-
+ 
   /* ── DOMINIO ── */
   function renderDominio() {
     const u=Auth.me(), body=document.getElementById('dominio-body');
@@ -489,7 +501,7 @@
     if(res.ok){Sound.correct();closeModal('modal-dominio');updateHUD();Notify.success('🔥 "'+nombre+'" registrado.');}
     else{errEl.textContent=res.error;errEl.classList.add('visible');}
   }
-
+ 
   /* ── RESET ── */
   async function doReset() {
     const btn=document.getElementById('btn-reset-confirm');
@@ -499,7 +511,7 @@
     if(res.ok){const names=res.top3.map((p,i)=>['🥇','🥈','🥉'][i]+' '+p.displayName).join(', ');closeModal('modal-reset');Notify.success('Temporada reseteada. '+names);updateHUD();}
     else Notify.error('Error: '+res.error);
   }
-
+ 
   /* ── LEVEL UP ── */
   function showLevelUp(level) {
     const rank=Progress.getRank(level);
