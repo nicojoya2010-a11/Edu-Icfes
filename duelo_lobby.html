@@ -9,16 +9,16 @@
 </head>
 <body>
 <div class="d-notifs" id="d-notifs"></div>
-
+ 
 <div class="duelo-page">
-
+ 
   <!-- Header -->
   <div class="duelo-topbar">
     <button class="back-btn" onclick="salir()">Base</button>
     <div class="duelo-title">Modo <em>Duelo</em></div>
     <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-4);" id="lv-badge">Nv.—</div>
   </div>
-
+ 
   <!-- Info del jugador -->
   <div class="card" style="margin-bottom:12px;">
     <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
@@ -30,7 +30,7 @@
       <div style="font-family:var(--serif);font-size:1.4rem;color:var(--amber);" id="lv-xp">0</div>
     </div>
   </div>
-
+ 
   <!-- Descripción -->
   <div class="card" style="margin-bottom:14px;">
     <div style="padding:14px 16px;font-family:var(--mono);font-size:.72rem;color:var(--ink-3);line-height:1.7;">
@@ -39,7 +39,7 @@
       🏆 Ganador obtiene <span style="color:var(--amber);">XP doble</span>
     </div>
   </div>
-
+ 
   <!-- ELEGIR -->
   <div id="screen-elegir">
     <div style="display:flex;flex-direction:column;gap:8px;">
@@ -50,7 +50,7 @@
       Necesitas <strong>nivel 20</strong> para el Modo Duelo.<br>Tu nivel actual: <strong id="lvl-actual">—</strong>
     </div>
   </div>
-
+ 
   <!-- CREAR -->
   <div id="screen-crear" class="hidden">
     <div class="card">
@@ -79,7 +79,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- UNIRSE -->
   <div id="screen-unirse" class="hidden">
     <div class="card">
@@ -98,7 +98,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- ESPERA -->
   <div id="screen-espera" class="hidden">
     <div class="card">
@@ -106,7 +106,7 @@
         <div style="font-family:var(--mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.12em;margin-bottom:12px;text-transform:uppercase;">Código de sala</div>
         <div class="sala-code-display" id="e-codigo">——</div>
         <div class="sala-code-hint" style="margin-bottom:20px;">Comparte este código con tu rival</div>
-
+ 
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
           <!-- Jugador 1 -->
           <div class="duelo-player" id="e-j1">
@@ -127,7 +127,7 @@
             </div>
           </div>
         </div>
-
+ 
         <div class="waiting-dots">
           <div class="w-dot"></div><div class="w-dot"></div><div class="w-dot"></div>
         </div>
@@ -136,18 +136,18 @@
       </div>
     </div>
   </div>
-
+ 
 </div>
-
+ 
 <script src="preguntas.js"></script>
 <script src="app.js"></script>
 <script>
   const DUELO_DB = FB + '/duelos';
   const lobbyU   = requireAuth();
   if (!lobbyU) throw new Error('no auth');
-
+ 
   let salaId=null, esCreador=false, polling=null;
-
+ 
   /* ── INIT ── */
   (function init() {
     const rank = Progress.getRank(lobbyU.level);
@@ -162,14 +162,14 @@
       document.querySelectorAll('.btn-primary,.btn-outline').forEach(b=>b.disabled=true);
     }
   })();
-
+ 
   /* ── PANTALLAS ── */
   function mostrar(id) {
     ['elegir','crear','unirse','espera'].forEach(s=>{
       document.getElementById('screen-'+s).classList.toggle('hidden', s!==id);
     });
   }
-
+ 
   /* ── CREAR SALA ── */
   async function crearSala() {
     if (lobbyU.level<20) { dNotif('Nivel 20 requerido','err'); return; }
@@ -180,7 +180,7 @@
     const sala = {
       codigo, estado:'esperando', numPregs:num, tiempo,
       creadoEn: Date.now(),
-      jugador1: { username:lobbyU.username, displayName:lobbyU.displayName, nivel:lobbyU.level, puntos:0 },
+      jugador1: { uid:lobbyU.uid, username:lobbyU.username, displayName:lobbyU.displayName, nivel:lobbyU.level, puntos:0 },
       jugador2: null, preguntas:[],
     };
     try {
@@ -188,7 +188,7 @@
       mostrarEspera(codigo); startPolling(codigo);
     } catch { dNotif('Error al crear sala. Verifica conexión.','err'); }
   }
-
+ 
   /* ── UNIRSE ── */
   async function unirse() {
     if (lobbyU.level<20) { dNotif('Nivel 20 requerido','err'); return; }
@@ -200,10 +200,10 @@
       if (!sala)                        { dNotif('Sala no encontrada','err'); return; }
       if (sala.estado!=='esperando')    { dNotif('Sala ya iniciada o cerrada','err'); return; }
       if (sala.jugador2)                { dNotif('Sala llena','err'); return; }
-      if (sala.jugador1.username===lobbyU.username) { dNotif('No puedes enfrentarte a ti mismo','err'); return; }
+      if (sala.jugador1.uid && lobbyU.uid && sala.jugador1.uid === lobbyU.uid) { dNotif('No puedes enfrentarte a ti mismo','err'); return; }
       await fetch(`${DUELO_DB}/${codigo}/jugador2.json`,{
         method:'PUT', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ username:lobbyU.username, displayName:lobbyU.displayName, nivel:lobbyU.level, puntos:0 }),
+        body: JSON.stringify({ uid:lobbyU.uid, username:lobbyU.username, displayName:lobbyU.displayName, nivel:lobbyU.level, puntos:0 }),
       });
       // Generar preguntas y cambiar estado
       const pregs = genPreguntas(sala.numPregs);
@@ -213,7 +213,7 @@
       mostrarEspera(codigo); startPolling(codigo);
     } catch { dNotif('Error al unirse','err'); }
   }
-
+ 
   /* ── ESPERA ── */
   function mostrarEspera(codigo) {
     document.getElementById('e-codigo').textContent  = codigo;
@@ -222,7 +222,7 @@
     document.getElementById('e-i1').textContent      = 'Nv.'+lobbyU.level;
     mostrar('espera');
   }
-
+ 
   /* ── POLLING ── */
   function startPolling(codigo) {
     polling = setInterval(async () => {
@@ -249,14 +249,14 @@
       } catch {}
     }, 1500);
   }
-
+ 
   /* ── CANCELAR ── */
   async function cancelar() {
     clearInterval(polling);
     if (salaId&&esCreador) try{ await fetch(`${DUELO_DB}/${salaId}.json`,{method:'DELETE'}); }catch{}
     salaId=null; mostrar('elegir');
   }
-
+ 
   /* ── HELPERS ── */
   function genCodigo() {
     const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -267,20 +267,20 @@
     while(out.length<n&&banco.length){ const i=Math.floor(Math.random()*banco.length); out.push(banco.splice(i,1)[0].id); }
     return out;
   }
-
+ 
   function dNotif(msg,tipo='') {
     const c=document.getElementById('d-notifs');
     const el=document.createElement('div'); el.className='d-notif '+tipo; el.textContent=msg;
     c.appendChild(el);
     setTimeout(()=>{ el.classList.add('d-notif-out'); setTimeout(()=>el.remove(),300); },3000);
   }
-
+ 
   function salir() {
     clearInterval(polling);
     if (salaId&&esCreador) fetch(`${DUELO_DB}/${salaId}.json`,{method:'DELETE'}).catch(()=>{});
     window.location.href='main.html';
   }
-
+ 
   window.addEventListener('beforeunload',()=>clearInterval(polling));
 </script>
 </body>
