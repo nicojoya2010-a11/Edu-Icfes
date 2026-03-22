@@ -283,7 +283,7 @@ textarea.input-field { resize: vertical; min-height: 80px; line-height: 1.5; }
 /* ── PLAYER CARD ────────────────────────────────── */
 .player-card { padding: 20px; display: flex; gap: 16px; align-items: center; position: relative; z-index: 1; }
 .player-avatar {
-  width: 52px; height: 52px;
+  width: 100px; height: 100px;
   background: var(--grad-h); border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--serif); font-size: 1.4rem; color: #fff;
