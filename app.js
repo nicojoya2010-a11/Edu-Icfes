@@ -7,7 +7,7 @@
  
 /* ── FIREBASE CONFIG ───────────────────────────── */
 const FB        = 'https://edu-icfesv3-default-rtdb.firebaseio.com';
-const FB_APIKEY = 'AIzaSyDEHmT49o7Jiod2nEvVM1pCL6HB8GIAhE4'; // Reemplaza con tu API Key de Firebase
+const FB_APIKEY = 'AIzaSyC_PLACEHOLDER'; // Reemplaza con tu API Key de Firebase
 const FB_AUTH   = 'https://identitytoolkit.googleapis.com/v1';
 /* ─────────────────────────────────────────────────── */
  
@@ -1187,11 +1187,43 @@ async function checkSeasonReset(username) {
   } catch {}
 }
  
+async function checkAdminEdit(u) {
+  if (!u?.uid) return;
+  try {
+    const r = await fetch(`${FB}/admin_edits/${u.uid}.json`);
+    const edit = await r.json();
+    if (!edit || !edit.ts) return;
+    // Solo aplicar si es más reciente que el último check
+    const lastCheck = parseInt(Store.get('ei_last_admin_edit_'+u.uid)||'0');
+    if (edit.ts <= lastCheck) return;
+    Store.set('ei_last_admin_edit_'+u.uid, String(edit.ts));
+    // Aplicar cambios al usuario local
+    const users = Auth.users();
+    const key   = u.email || u.username;
+    if (!users[key]) return;
+    if (edit.level   !== undefined) users[key].level   = edit.level;
+    if (edit.totalXP !== undefined) users[key].totalXP = edit.totalXP;
+    if (edit.xp      !== undefined) users[key].xp      = edit.xp;
+    if (edit.monedas !== undefined) users[key].monedas = edit.monedas;
+    if (edit.streak  !== undefined) users[key].streak  = edit.streak;
+    Auth.saveUsers(users);
+    // Notificar al jugador
+    console.log('[EDU-ICFES] Admin actualizó tu perfil → Nv.'+edit.level);
+    // Si hay Notify disponible, mostrar mensaje
+    if (typeof Notify !== 'undefined') {
+      setTimeout(()=>Notify.show('⚡ Tu perfil fue actualizado por el admin','levelup',4000), 1500);
+    }
+    // Recargar HUD si estamos en main
+    if (typeof updateHUD === 'function') setTimeout(updateHUD, 200);
+  } catch {}
+}
+ 
 function requireAuth() {
   const u = Auth.me();
   if (!u) { window.location.href = 'index.html'; return null; }
   checkBan(u.username);
   checkSeasonReset(u.username);
+  checkAdminEdit(u); // verificar si admin editó este usuario
   return u;
 }
  
@@ -1233,8 +1265,8 @@ Object.assign(window, {
   Economy, SHOP_ITEMS, CONTRATO_OPCIONES, SHOP_EFFECTS, Contrato,
   SUBJECTS, ACHIEVEMENTS, RANKS, QUESTIONS, ADMIN, FB,
   xpNecesaria, recompensaXP, XP_STREAK_BONUS,
-  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset,
+  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset, checkAdminEdit,
 });
  
 // Verificación de carga correcta
-console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB)
+console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB);
