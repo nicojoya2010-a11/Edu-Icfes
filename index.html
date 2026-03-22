@@ -8,24 +8,24 @@
 </head>
 <body>
 <div id="notification-container"></div>
- 
+
 <div class="auth-wrapper">
   <div class="auth-box animate-in">
- 
+
     <div class="auth-brand">
       <div class="auth-brand-title">Edu-Icfes</div>
       <div class="auth-brand-sub">Sistema de nivelación · v3.0</div>
       <div class="brand-line"></div>
     </div>
- 
+
     <div class="card">
       <div class="card-body" style="padding:24px;">
- 
+
         <div class="auth-tabs" id="auth-tabs">
           <button class="auth-tab active" onclick="switchTab('login')">Iniciar sesión</button>
           <button class="auth-tab" onclick="switchTab('register')">Registrarse</button>
         </div>
- 
+
         <!-- LOGIN -->
         <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-error" id="login-error"></div>
@@ -48,7 +48,7 @@
             </button>
           </div>
         </form>
- 
+
         <!-- REGISTER -->
         <form id="form-register" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-error" id="register-error"></div>
@@ -76,7 +76,7 @@
             Crear cuenta
           </button>
         </form>
- 
+
         <!-- RECOVER -->
         <div id="form-recover" class="auth-form hidden">
           <div class="form-error" id="recover-error"></div>
@@ -97,10 +97,10 @@
             ← Volver al login
           </button>
         </div>
- 
+
       </div>
     </div>
- 
+
     <!-- Preview stats -->
     <div class="auth-preview">
       <div class="auth-preview-item">
@@ -116,15 +116,15 @@
         <span class="auth-preview-lbl">Logros</span>
       </div>
     </div>
- 
+
   </div>
 </div>
- 
+
 <script src="preguntas.js"></script>
 <script src="app.js"></script>
 <script>
   redirectIfLogged();
- 
+
   function switchTab(tab) {
     ['login','register','recover'].forEach(t=>{
       document.getElementById('form-'+t).classList.toggle('hidden', t!==tab);
@@ -134,7 +134,7 @@
     });
     clearErrors();
   }
- 
+
   function clearErrors() {
     document.querySelectorAll('.form-error').forEach(e=>{e.classList.remove('visible');e.textContent='';});
     const s=document.getElementById('recover-success');
@@ -144,7 +144,7 @@
     const el=document.getElementById(id);
     el.textContent=msg; el.classList.add('visible');
   }
- 
+
   /* ── LOGIN ── */
   async function handleLogin(e) {
     e.preventDefault(); clearErrors();
@@ -161,7 +161,7 @@
       showErr('login-error', res.error);
     }
   }
- 
+
   /* ── REGISTER ── */
   async function handleRegister(e) {
     e.preventDefault(); clearErrors();
@@ -182,7 +182,7 @@
       showErr('register-error', res.error);
     }
   }
- 
+
   /* ── RECOVER ── */
   async function handleRecover() {
     clearErrors();
