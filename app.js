@@ -324,6 +324,23 @@ const Auth = {
     } catch {}
     return null;
   },
+ 
+  // Recargar progreso fresco desde Firebase (usar tras edición de admin)
+  async refreshFromFirebase() {
+    const u = this.me();
+    if (!u?.uid) return null;
+    try {
+      const r = await fetch(`${FB}/progress/${u.uid}.json`);
+      const remote = await r.json();
+      if (remote && remote.uid) {
+        this._cache = remote;
+        this._setSession(remote);
+        console.log('[EDU-ICFES] ✓ Sesión refrescada desde Firebase → Nv.' + remote.level);
+        return remote;
+      }
+    } catch {}
+    return u;
+  },
   isAdmin(u) { return u?.email?.toLowerCase() === ADMIN; },
  
   async register(email, displayName, password) {
@@ -352,7 +369,8 @@ const Auth = {
     const fbRes = await FBAuth.signIn(email, password);
     if (!fbRes.ok) return fbRes;
  
-    // 2. Cargar progreso SIEMPRE desde Firebase (fuente de verdad)
+    // 2. Cargar progreso SIEMPRE desde Firebase (fuente de verdad absoluta)
+    //    Nunca usar localStorage aquí — puede estar desactualizado por edición de admin
     let u = null;
     try {
       const r = await fetch(`${FB}/progress/${fbRes.uid}.json`);
@@ -361,7 +379,14 @@ const Auth = {
         u = remote;
         console.log('[EDU-ICFES] ✓ Progreso cargado desde Firebase → Nv.' + remote.level);
       }
-    } catch {}
+    } catch(e) {
+      console.warn('[EDU-ICFES] No se pudo cargar desde Firebase, usando localStorage como fallback');
+      // Solo como fallback si no hay internet
+      try {
+        const stored = localStorage.getItem(this.SK);
+        if (stored) { const parsed = JSON.parse(stored); if (parsed?.uid === fbRes.uid) u = parsed; }
+      } catch {}
+    }
  
     // 3. Si no existe progreso en Firebase, crear nuevo usuario
     if (!u) {
@@ -1319,7 +1344,7 @@ async function checkAdminEdit(u) {
     const lastCheck = parseInt(Store.get('ei_last_admin_edit_'+u.uid)||'0');
     if (edit.ts <= lastCheck) return;
     Store.set('ei_last_admin_edit_'+u.uid, String(edit.ts));
-    // Aplicar cambios al cache en memoria
+    // Aplicar cambios al cache en memoria Y al localStorage
     const cached = Auth.me();
     if (!cached) return;
     if (edit.level   !== undefined) cached.level   = edit.level;
@@ -1328,6 +1353,7 @@ async function checkAdminEdit(u) {
     if (edit.monedas !== undefined) cached.monedas = edit.monedas;
     if (edit.streak  !== undefined) cached.streak  = edit.streak;
     Auth._cache = cached;
+    Auth._setSession(cached); // sincronizar localStorage para que no revierta
     // Notificar al jugador
     console.log('[EDU-ICFES] Admin actualizó tu perfil → Nv.'+edit.level);
     // Si hay Notify disponible, mostrar mensaje
