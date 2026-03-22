@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edu-Icfes — Inicio</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Títulos del menú centrados */
+    .nav-title { text-align: center; }
+    .nav-desc  { text-align: center; }
+
+    /* Menú desplegable */
+    .submenu {
+      display: none; flex-direction: column; gap: 5px;
+      padding: 6px 0 0 14px;
+      border-left: 1px solid rgba(22,115,255,0.2);
+      margin-left: 18px;
+    }
+    .submenu.open { display: flex; }
+    .submenu .nav-item { padding: 11px 14px; }
+    .submenu .nav-title { font-size: .82rem; }
+  </style>
+</head>
+<body>
+<div id="notification-container"></div>
+
+<div id="levelup-overlay" class="levelup-overlay hidden">
+  <div class="levelup-particles" id="lu-particles"></div>
+  <div class="levelup-title">Nivel alcanzado</div>
+  <div class="levelup-number" id="lu-num">2</div>
+  <div class="levelup-rank" id="lu-rank"></div>
+  <button class="btn btn-outline" style="margin-top:20px;color:var(--ink);border-color:rgba(22,115,255,0.4);" onclick="closeLU()">Continuar →</button>
+</div>
+
+<div class="page-wrapper">
+
+  <div class="topbar">
+    <div class="topbar-brand">Edu-Icfes</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-family:var(--mono);font-size:.68rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;" onclick="window.location.href='tienda.html'" title="Ir a la tienda">🪙 <span id="hud-coins">0</span></div>
+      <div class="topbar-time" id="clock">--:--</div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <!-- Player card -->
+  <div class="card card-accent animate-in" style="margin-bottom:10px;">
+    <div class="player-card">
+      <div class="player-avatar" id="p-avatar">?</div>
+      <div class="player-info">
+        <div class="player-name" id="p-name">—</div>
+        <div class="player-rank" id="p-rank">—</div>
+        <div class="xp-bar-wrap" style="margin-top:8px;">
+          <div class="xp-bar-labels">
+            <span>EXP</span>
+            <span id="p-xp-label">0 / 100</span>
+          </div>
+          <div class="xp-bar-track"><div class="xp-bar-fill" id="p-xp-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="level-badge"><div id="p-level">1</div><small>nivel</small></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid animate-in" style="animation-delay:.05s;margin-bottom:14px;">
+    <div class="stat-item"><div class="stat-icon">🎯</div><div class="stat-val" id="s-correct">0</div><div class="stat-lbl">Correctas</div></div>
+    <div class="stat-item"><div class="stat-icon">📊</div><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Respondidas</div></div>
+    <div class="stat-item"><div class="stat-icon">🔥</div><div class="stat-val" id="s-streak">0</div><div class="stat-lbl">Racha</div></div>
+    <div class="stat-item"><div class="stat-icon">⭐</div><div class="stat-val" id="s-xp">0</div><div class="stat-lbl">XP Total</div></div>
+  </div>
+
+  <!-- Menú principal -->
+  <div class="section-label animate-in" style="animation-delay:.08s;">Acciones</div>
+  <div class="nav-menu animate-in" style="animation-delay:.1s;margin-bottom:14px;">
+
+    <a href="ejercicios.html" class="nav-item amber">
+      <div class="nav-icon">✏️</div>
+      <div class="nav-text">
+        <div class="nav-title">Entrenamiento</div>
+        <div class="nav-desc">Responde preguntas y gana XP</div>
+      </div>
+      <div class="nav-arrow">→</div>
+    </a>
+
+    <a href="mascota.html" class="nav-item">
+      <div class="nav-icon" id="pet-icon">🥚</div>
+      <div class="nav-text">
+        <div class="nav-title">Mi Mascota</div>
+        <div class="nav-desc" id="pet-desc">Evoluciona con tu racha diaria</div>
+      </div>
+      <div class="nav-arrow">→</div>
+    </a>
+
+    <a href="tienda.html" class="nav-item">
+      <div class="nav-icon">🛒</div>
+      <div class="nav-text">
+        <div class="nav-title">Tienda</div>
+        <div class="nav-desc" id="tienda-desc">0 🪙 monedas</div>
+      </div>
+      <div class="nav-arrow">→</div>
+    </a>
+
+    <a href="duelo_lobby.html" class="nav-item" id="btn-duelo" style="display:none;">
+      <div class="nav-icon">⚔️</div>
+      <div class="nav-text">
+        <div class="nav-title" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Modo Duelo</div>
+        <div class="nav-desc">Desafía a otro jugador — Nivel 20+</div>
+      </div>
+      <div class="nav-arrow">→</div>
+    </a>
+
+    <button class="nav-item" onclick="openModal('modal-leaderboard')">
+      <div class="nav-icon">🌐</div>
+      <div class="nav-text">
+        <div class="nav-title">Ranking Global</div>
+        <div class="nav-desc">Top 10 jugadores</div>
+      </div>
+      <div class="nav-arrow">→</div>
+    </button>
+
+    <!-- Más opciones desplegable -->
+    <button class="nav-item" onclick="toggleMas()" id="btn-mas">
+      <div class="nav-icon">☰</div>
+      <div class="nav-text">
+        <div class="nav-title">Más opciones</div>
+        <div class="nav-desc">Perfil, Logros, Anuncios...</div>
+      </div>
+      <div class="nav-arrow" id="mas-arrow">↓</div>
+    </button>
+
+    <div class="submenu" id="submenu-mas">
+      <button class="nav-item" onclick="openModal('modal-profile')">
+        <div class="nav-icon" style="font-size:1rem;">👤</div>
+        <div class="nav-text"><div class="nav-title">Mi Perfil</div></div>
+        <div class="nav-arrow">→</div>
+      </button>
+      <button class="nav-item" onclick="openModal('modal-achievements')">
+        <div class="nav-icon" style="font-size:1rem;">🏆</div>
+        <div class="nav-text"><div class="nav-title">Logros</div></div>
+        <div class="nav-arrow">→</div>
+      </button>
+      <a href="anuncios.html" class="nav-item">
+        <div class="nav-icon" style="font-size:1rem;">📢</div>
+        <div class="nav-text"><div class="nav-title">Anuncios <span id="ann-badge" style="color:#27a96d;font-size:.75rem;"></span></div></div>
+        <div class="nav-arrow">→</div>
+      </a>
+      <button class="nav-item" id="btn-dominio" style="display:none;" onclick="openModal('modal-dominio')">
+        <div class="nav-icon" style="font-size:1rem;">🔥</div>
+        <div class="nav-text">
+          <div class="nav-title" id="btn-dominio-label">Nombrar tu Dominio</div>
+          <div class="nav-desc" id="btn-dominio-desc" style="font-size:.7rem;">Nivel 40+</div>
+        </div>
+        <div class="nav-arrow">→</div>
+      </button>
+    </div>
+
+    <!-- Admin -->
+    <button class="nav-item" id="btn-allplayers" style="display:none;" onclick="openModal('modal-allplayers')">
+      <div class="nav-icon">👥</div>
+      <div class="nav-text"><div class="nav-title">Todos los jugadores</div><div class="nav-desc">Admin</div></div>
+      <div class="nav-arrow">→</div>
+    </button>
+    <button class="nav-item" id="btn-announcements" style="display:none;" onclick="openModal('modal-announcements')">
+      <div class="nav-icon">📢</div>
+      <div class="nav-text"><div class="nav-title">Publicar Anuncio</div><div class="nav-desc">Admin</div></div>
+      <div class="nav-arrow">→</div>
+    </button>
+    <button class="nav-item" id="btn-ban" style="display:none;" onclick="openModal('modal-ban')">
+      <div class="nav-icon">🚫</div>
+      <div class="nav-text"><div class="nav-title" style="color:var(--red);">Gestionar usuarios</div><div class="nav-desc">Admin</div></div>
+      <div class="nav-arrow">→</div>
+    </button>
+    <button class="nav-item" id="btn-reset" style="display:none;" onclick="openModal('modal-reset')">
+      <div class="nav-icon">🔄</div>
+      <div class="nav-text"><div class="nav-title" style="color:var(--red);">Reset temporada</div><div class="nav-desc">Admin</div></div>
+      <div class="nav-arrow">→</div>
+    </button>
+
+  </div>
+
+  <!-- Entrenamiento rápido -->
+  <div class="section-label animate-in" style="animation-delay:.12s;">Entrenamiento rápido</div>
+  <div class="subject-pills animate-in" style="animation-delay:.14s;margin-bottom:10px;">
+    <a href="ejercicios.html?s=math"     class="subject-pill">∑ Matemáticas</a>
+    <a href="ejercicios.html?s=reading"  class="subject-pill">📖 Lectura</a>
+    <a href="ejercicios.html?s=english"  class="subject-pill">🌐 Inglés</a>
+    <a href="ejercicios.html?s=science"  class="subject-pill">⚗ Ciencias</a>
+    <a href="ejercicios.html?s=sociales" class="subject-pill">🌎 Sociales</a>
+  </div>
+
+</div>
+
+<!-- MODALES -->
+<div class="modal-overlay hidden" id="modal-profile">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Mi Perfil</div><button class="modal-close" onclick="closeModal('modal-profile')">✕</button></div><div class="modal-body" id="profile-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-achievements">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Logros</div><button class="modal-close" onclick="closeModal('modal-achievements')">✕</button></div><div class="modal-body" id="achievements-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-leaderboard">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Ranking Global</div><button class="modal-close" onclick="closeModal('modal-leaderboard')">✕</button></div><div class="modal-body" id="leaderboard-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-allplayers">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Todos los jugadores</div><button class="modal-close" onclick="closeModal('modal-allplayers')">✕</button></div><div class="modal-body" id="allplayers-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-announcements">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Publicar Anuncio</div><button class="modal-close" onclick="closeModal('modal-announcements')">✕</button></div><div class="modal-body" id="announcements-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-ban">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">Gestionar usuarios</div><button class="modal-close" onclick="closeModal('modal-ban')">✕</button></div><div class="modal-body" id="ban-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-dominio">
+  <div class="modal-box"><div class="modal-header"><div class="modal-title">🔥 Expansión de Dominio</div><button class="modal-close" onclick="closeModal('modal-dominio')">✕</button></div><div class="modal-body" id="dominio-body"></div></div>
+</div>
+<div class="modal-overlay hidden" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-header"><div class="modal-title">Reset de temporada</div><button class="modal-close" onclick="closeModal('modal-reset')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-family:var(--mono);font-size:.78rem;color:var(--ink-2);line-height:1.7;margin-bottom:20px;">Esta acción otorgará medallas al Top 3 y reseteará el nivel, XP y estadísticas de todos los jugadores.</p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-reset')">Cancelar</button>
+        <button class="btn btn-danger" style="flex:1;" id="btn-reset-confirm" onclick="doReset()">Confirmar reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="preguntas.js"></script>
+<script src="app.js"></script>
+<script>
+  const u = requireAuth();
+  if (u) init();
+
+  function init() { updateHUD(); startClock(); setTimeout(checkAnn, 1500); }
+
+  function updateHUD() {
+    const u = Auth.me(); if (!u) return;
+    const rank   = Progress.getRank(u.level);
+    const pct    = Progress.xpPct(u);
+    const medals = u.medals||{};
+    document.getElementById('p-avatar').textContent  = u.displayName[0].toUpperCase();
+    document.getElementById('p-name').textContent    = u.displayName;
+    document.getElementById('p-rank').textContent    = rank.label+' · Rango '+rank.rank+(medals.gold>0?'  🥇×'+medals.gold:'')+(medals.silver>0?'  🥈×'+medals.silver:'')+(medals.bronze>0?'  🥉×'+medals.bronze:'');
+    document.getElementById('p-level').textContent   = u.level;
+    document.getElementById('p-xp-bar').style.width  = pct+'%';
+    document.getElementById('p-xp-label').textContent= u.xp+' / '+xpNecesaria(u.level);
+    document.getElementById('s-correct').textContent = u.totalCorrect||0;
+    document.getElementById('s-total').textContent   = u.totalAnswered||0;
+    document.getElementById('s-streak').textContent  = u.streak||0;
+    document.getElementById('s-xp').textContent      = u.totalXP||0;
+
+    // Monedas
+    const coins = u.monedas||0;
+    const hudCoins = document.getElementById('hud-coins');
+    const tiendaDesc = document.getElementById('tienda-desc');
+    if (hudCoins) hudCoins.textContent = coins;
+    if (tiendaDesc) tiendaDesc.textContent = coins+' 🪙 monedas';
+
+    // Mascota
+    const pet     = u.pet||{stage:0,dayStreak:0};
+    const petInfo = (typeof Pet!=='undefined') ? Pet.getStageInfo(pet.stage) : {emoji:'🥚',name:'Huevo'};
+    const petIcon = document.getElementById('pet-icon');
+    const petDesc = document.getElementById('pet-desc');
+    if (petIcon) petIcon.textContent = petInfo.emoji;
+    if (petDesc) petDesc.textContent = petInfo.name+' · '+(pet.dayStreak||0)+' días de racha';
+
+    // Nivel 20+
+    const d = document.getElementById('btn-duelo');
+    if (d) d.style.display = u.level>=20 ? '' : 'none';
+
+    // Nivel 40+ dominio
+    const bd = document.getElementById('btn-dominio');
+    if (bd) {
+      bd.style.display = u.level>=40 ? '' : 'none';
+      if (u.dominioNombre) {
+        document.getElementById('btn-dominio-label').textContent = '🔥 '+u.dominioNombre;
+        document.getElementById('btn-dominio-desc').textContent  = 'Tu poder definitivo está activo';
+      }
+    }
+
+    // Admin
+    const isAdmin = Auth.isAdmin(u);
+    ['btn-allplayers','btn-announcements','btn-ban','btn-reset'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.style.display=isAdmin?'':'none';
+    });
+  }
+
+  function startClock() {
+    const tick=()=>{ document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); };
+    tick(); setInterval(tick,10000);
+  }
+
+  async function checkAnn() {
+    const u=Auth.me(); if(!u) return;
+    try {
+      const fresh=await Announcements.getNew(u);
+      if (!fresh.length) return;
+      Announcements.markSeen(u,fresh.map(a=>a.id));
+      const badge=document.getElementById('ann-badge');
+      if (badge&&fresh.length>0) badge.textContent='🔔'+fresh.length;
+      fresh.forEach((a,i)=>setTimeout(()=>Notify.show('📢 '+a.text,'warning',6000),i*1300));
+    } catch {}
+    try {
+      const fresh2=await Announcements.getNew(Auth.me());
+      const badge=document.getElementById('ann-badge');
+      if(badge) badge.textContent=fresh2.length>0?'🔔'+fresh2.length:'';
+    } catch {}
+  }
+
+  function toggleMas() {
+    const menu=document.getElementById('submenu-mas');
+    const arrow=document.getElementById('mas-arrow');
+    const open=menu.classList.contains('open');
+    menu.classList.toggle('open',!open);
+    arrow.textContent=open?'↓':'↑';
+    Sound.click();
+  }
+
+  function openModal(id) {
+    Sound.click();
+    if (id==='modal-profile')       renderProfile();
+    if (id==='modal-achievements')  renderAchievements();
+    if (id==='modal-leaderboard')   renderLeaderboard();
+    if (id==='modal-allplayers')    renderAllPlayers();
+    if (id==='modal-announcements') renderAnnouncements();
+    if (id==='modal-ban')           renderBan();
+    if (id==='modal-dominio')       renderDominio();
+    document.getElementById(id).classList.remove('hidden');
+  }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+  document.querySelectorAll('.modal-overlay').forEach(o=>{
+    o.addEventListener('click',e=>{ if(e.target===o) o.classList.add('hidden'); });
+  });
+
+  /* ── PERFIL ── */
+  function renderProfile() {
+    const u=Auth.me(), rank=Progress.getRank(u.level);
+    const acc=u.totalAnswered?Math.round((u.totalCorrect/u.totalAnswered)*100):0;
+    const ss=u.subjectStats||{};
+    const colors={math:'#60a5fa',reading:'#c084fc',english:'#34d399',science:'#fb923c',sociales:'#facc15'};
+    const bars=Object.entries(SUBJECTS).map(([k,s])=>{
+      const d=ss[k]||{answered:0,correct:0};
+      const p=d.answered?Math.round((d.correct/d.answered)*100):0;
+      return `<div class="subject-bar-row">
+        <div class="subject-bar-label">${s.icon} ${s.label}</div>
+        <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${p}%;background:${colors[k]};"></div></div>
+        <div class="subject-bar-num">${d.correct}/${d.answered}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('profile-body').innerHTML=`
+      <div style="text-align:center;padding:16px 0 20px;">
+        <div style="width:64px;height:64px;border-radius:16px;background:var(--grad-h);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;color:#fff;margin:0 auto 12px;box-shadow:var(--glow-bp);">${u.displayName[0].toUpperCase()}</div>
+        <div style="font-family:var(--serif);font-size:1.2rem;">${u.displayName}</div>
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);">@${u.username}</div>
+        <div style="font-family:var(--mono);font-size:.72rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:4px;">${rank.label} · Rango ${rank.rank}</div>
+      </div>
+      <div class="card" style="margin-bottom:12px;"><div class="card-inner">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;">Estadísticas</div>
+        ${[['Nivel',u.level],['XP Total',u.totalXP||0],['Respondidas',u.totalAnswered||0],['Correctas',u.totalCorrect||0],['Precisión',acc+'%'],['Racha Máx.',u.maxStreak||0],['Logros',(u.achievements||[]).length+'/'+ACHIEVEMENTS.length]].map(([k,v])=>`
+          <div style="display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:.85rem;">
+            <span style="color:var(--ink-3);">${k}</span><span style="font-weight:600;">${v}</span>
+          </div>`).join('')}
+      </div></div>
+      <div class="card"><div class="card-inner"><div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;">Por materia</div><div style="padding:12px 16px;">${bars}</div></div></div>`;
+    setTimeout(()=>{ document.querySelectorAll('.subject-bar-fill').forEach(b=>{ const w=b.style.width; b.style.width='0'; requestAnimationFrame(()=>{ b.style.transition='width .7s ease'; b.style.width=w; }); }); },100);
+  }
+
+  /* ── LOGROS ── */
+  function renderAchievements() {
+    const u=Auth.me(), done=u.achievements||[];
+    document.getElementById('achievements-body').innerHTML=`
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--ink-3);margin-bottom:14px;">${done.length} / ${ACHIEVEMENTS.length} desbloqueados</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${ACHIEVEMENTS.map(a=>`<div class="achievement ${done.includes(a.id)?'unlocked':'locked'}">
+          <div class="achievement-icon">${a.icon}</div>
+          <div class="achievement-info"><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.desc}</div></div>
+          ${done.includes(a.id)?'<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:.8rem;">✓</span>':''}
+        </div>`).join('')}
+      </div>`;
+  }
+
+  /* ── LEADERBOARD ── */
+  async function renderLeaderboard() {
+    const body=document.getElementById('leaderboard-body');
+    const me=Auth.me();
+    body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+    const top=await Leaderboard.getTop(10);
+    const medals=['🥇','🥈','🥉'];
+    const rows=top.map((p,i)=>`
+      <div class="leaderboard-row ${i<3?'top-'+(i+1):''} ${p.username===me.username?'me':''}">
+        <div class="rank-num">${medals[i]||('#'+(i+1))}</div>
+        <div class="rank-name">${p.displayName}${p.username===me.username?' (tú)':''}</div>
+        <div class="rank-level">Nv.${p.level}</div>
+        <div class="rank-xp">${p.totalXP} XP</div>
+      </div>`).join('');
+    body.innerHTML=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);margin-bottom:10px;">${navigator.onLine?'Tiempo real · Firebase':'Sin conexión'}</div>
+      <div class="card"><div class="card-inner"><div class="leaderboard-row" style="opacity:.4;font-size:.65rem;border-bottom:1px solid var(--border);"><div>#</div><div>Jugador</div><div>Nvl</div><div>XP</div></div>${rows||'<div style="padding:30px;text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--ink-3);">Sin datos aún.</div>'}</div></div>`;
+  }
+
+  /* ── ALL PLAYERS ── */
+  async function renderAllPlayers() {
+    const body=document.getElementById('allplayers-body'), me=Auth.me();
+    body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+    const all=await Leaderboard.getAll();
+    const myPos=all.findIndex(p=>p.username===me.username);
+    const medals=['🥇','🥈','🥉'];
+    const rows=all.map((p,i)=>`<div class="leaderboard-row ${i<3?'top-'+(i+1):''} ${p.username===me.username?'me':''}"><div class="rank-num">${medals[i]||('#'+(i+1))}</div><div class="rank-name">${p.displayName}${p.username===me.username?' (tú)':''}</div><div class="rank-level">Nv.${p.level}</div><div class="rank-xp">${p.totalXP} XP</div></div>`).join('');
+    body.innerHTML=`${myPos>=0?`<div style="font-family:var(--mono);font-size:.72rem;color:var(--ink-2);margin-bottom:10px;">Tu posición: <strong>#${myPos+1}</strong> de ${all.length}</div>`:''}
+      <div class="card"><div class="card-inner"><div class="leaderboard-row" style="opacity:.4;font-size:.65rem;border-bottom:1px solid var(--border);"><div>#</div><div>Jugador</div><div>Nvl</div><div>XP</div></div>${rows||'<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--ink-3);">Sin datos.</div>'}</div></div>`;
+  }
+
+  /* ── ANUNCIOS ADMIN ── */
+  async function renderAnnouncements() {
+    const body=document.getElementById('announcements-body');
+    body.innerHTML=`<div class="input-group" style="margin-bottom:10px;"><label class="input-label">Nuevo anuncio</label><textarea class="input-field" id="ann-txt" rows="3" placeholder="Mensaje para todos los jugadores..."></textarea></div><button class="btn btn-amber w-full" style="margin-bottom:16px;" onclick="publishAnn()">Publicar</button><div class="section-label" style="margin-bottom:8px;">Anuncios activos</div><div id="ann-list"><div style="text-align:center;padding:20px;"><div class="loader"></div></div></div>`;
+    const all=await Announcements.getAll();
+    const list=document.getElementById('ann-list');
+    if (!all.length) { list.innerHTML='<p style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);text-align:center;">Sin anuncios.</p>'; return; }
+    list.innerHTML=all.map(a=>{
+      const d=new Date(a.createdAt).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'});
+      return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;"><div style="font-size:.85rem;color:var(--ink);margin-bottom:3px;">${a.text}</div><div style="font-family:var(--mono);font-size:.6rem;color:var(--ink-4);">${d}</div></div>
+        <button class="btn btn-ghost btn-sm" style="font-size:.75rem;color:var(--red);" onclick="deleteAnn('${a.id}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+  async function publishAnn() {
+    const txt=document.getElementById('ann-txt').value.trim();
+    const res=await Announcements.publish(txt,Auth.me());
+    if(res.ok){Notify.success('Anuncio publicado.');document.getElementById('ann-txt').value='';renderAnnouncements();}
+    else Notify.error(res.error);
+  }
+  async function deleteAnn(id) { await Announcements.delete(id,Auth.me()); Notify.success('Eliminado.'); renderAnnouncements(); }
+
+  /* ── BAN ── */
+  async function renderBan() {
+    const body=document.getElementById('ban-body');
+    body.innerHTML='<div style="text-align:center;padding:20px;"><div class="loader"></div></div>';
+    const users=await Auth.getAllGlobal(), banData=await Auth.getBans();
+    const filtered=users.filter(u=>u.username!==ADMIN);
+    body.innerHTML=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);margin-bottom:12px;">${filtered.length} usuario(s)</div>
+      ${filtered.length===0?'<p style="font-family:var(--mono);font-size:.78rem;color:var(--ink-3);text-align:center;">Sin usuarios.</p>':
+        filtered.map(u=>{
+          const fb=banData[u.username]?.banned===true, banned=fb||u.banned;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-weight:600;font-size:.88rem;">${u.displayName}</div>
+            <div style="font-family:var(--mono);font-size:.62rem;color:var(--ink-3);">@${u.username} · Nv.${u.level} · ${banned?'<span style="color:var(--red);">Baneado</span>':'<span style="color:var(--green);">Activo</span>'}</div></div>
+            ${banned?`<button class="btn btn-sm" style="background:var(--green-lt);color:var(--green);box-shadow:none;" onclick="doUnban('${u.username}')">Desbanear</button>`:`<button class="btn btn-danger btn-sm" onclick="doBan('${u.username}')">Banear</button>`}
+          </div>`;
+        }).join('')}`;
+  }
+  async function doBan(un) { if(!confirm('¿Banear @'+un+'?'))return; const r=await Auth.banUser(un,Auth.me()); if(r.ok){Notify.success('Baneado.');renderBan();}else Notify.error(r.error); }
+  async function doUnban(un) { const r=await Auth.unbanUser(un,Auth.me()); if(r.ok){Notify.success('Desbaneado.');renderBan();}else Notify.error(r.error); }
+
+  /* ── DOMINIO ── */
+  function renderDominio() {
+    const u=Auth.me(), body=document.getElementById('dominio-body');
+    if (u.dominioNombre) {
+      body.innerHTML=`<div style="text-align:center;padding:24px 0 16px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🔥</div>
+        <div style="font-family:var(--mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.15em;margin-bottom:8px;text-transform:uppercase;">Tu Expansión de Dominio</div>
+        <div style="font-family:var(--serif);font-size:1.8rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;">${u.dominioNombre}</div>
+        <div style="font-family:var(--mono);font-size:.68rem;color:var(--ink-3);line-height:1.6;">+80% tus puntos · −30% rival · 3 preguntas</div>
+      </div>`;
+    } else {
+      body.innerHTML=`<div style="text-align:center;padding:16px 0 20px;">
+        <div style="font-size:2.2rem;margin-bottom:10px;">🔥</div>
+        <div style="font-family:var(--serif);font-size:1.1rem;margin-bottom:8px;">Bautiza tu poder</div>
+        <div style="font-family:var(--mono);font-size:.68rem;color:var(--ink-3);line-height:1.6;margin-bottom:20px;">Este nombre es permanente. Aparecerá en ambas pantallas al activar el poder.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="form-error hidden" id="dom-error"></div>
+        <div class="input-group">
+          <label class="input-label">Nombre de tu Dominio</label>
+          <input class="input-field" id="dom-input" type="text" placeholder="ej: Dominio Infinito, Llamas del Juicio..." maxlength="28" style="text-align:center;font-size:1rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--ink-4);margin-top:4px;">Máximo 28 caracteres · No se puede cambiar</div>
+        </div>
+        <button class="btn btn-amber w-full" onclick="guardarDominio()">🔥 Confirmar nombre</button>
+        <button class="btn btn-ghost w-full" style="font-size:.82rem;" onclick="closeModal('modal-dominio')">Cancelar</button>
+      </div>`;
+    }
+  }
+  function guardarDominio() {
+    const nombre=document.getElementById('dom-input')?.value?.trim();
+    const errEl=document.getElementById('dom-error');
+    const res=Auth.setDominioNombre(nombre);
+    if(res.ok){Sound.correct();closeModal('modal-dominio');updateHUD();Notify.success('🔥 "'+nombre+'" registrado.');}
+    else{errEl.textContent=res.error;errEl.classList.add('visible');}
+  }
+
+  /* ── RESET ── */
+  async function doReset() {
+    const btn=document.getElementById('btn-reset-confirm');
+    btn.disabled=true; btn.textContent='Procesando...';
+    const res=await Leaderboard.resetSeason();
+    btn.disabled=false; btn.textContent='Confirmar reset';
+    if(res.ok){const names=res.top3.map((p,i)=>['🥇','🥈','🥉'][i]+' '+p.displayName).join(', ');closeModal('modal-reset');Notify.success('Temporada reseteada. '+names);updateHUD();}
+    else Notify.error('Error: '+res.error);
+  }
+
+  /* ── LEVEL UP ── */
+  function showLevelUp(level) {
+    const rank=Progress.getRank(level);
+    document.getElementById('lu-num').textContent=level;
+    document.getElementById('lu-rank').textContent=rank.label+' · Rango '+rank.rank;
+    const c=document.getElementById('lu-particles'); c.innerHTML='';
+    for(let i=0;i<20;i++){const p=document.createElement('div');p.className='lp';p.style.left='50%';p.style.top='50%';const ang=Math.random()*360*(Math.PI/180),d=60+Math.random()*180;p.style.setProperty('--dest',`translate(${Math.cos(ang)*d}px,${Math.sin(ang)*d}px)`);p.style.animationDuration=(0.5+Math.random()*.7)+'s';p.style.background=Math.random()>.5?'#1673ff':'#ea00ff';c.appendChild(p);}
+    document.getElementById('levelup-overlay').classList.remove('hidden');
+    Sound.levelUp();
+  }
+  function closeLU() { document.getElementById('levelup-overlay').classList.add('hidden'); }
+  function logout() { Auth.logout(); window.location.href='index.html'; }
+</script>
+</body>
+</html>
