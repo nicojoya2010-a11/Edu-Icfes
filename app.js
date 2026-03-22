@@ -344,8 +344,6 @@ const Auth = {
       });
     } catch {}
  
-    // Push al leaderboard desde el registro
-    Leaderboard.push(u);
     return { ok:true };
   },
  
@@ -395,17 +393,16 @@ const Auth = {
     this.saveUsers(users);
     Store.set(this.SK, email);
  
-    // Push inmediato al leaderboard (para que aparezca en ranking)
-    Leaderboard.push(u);
- 
-    // Verificar ban en segundo plano
+    // Sincronizar en segundo plano
     setTimeout(async () => {
       try {
+        // Verificar ban remoto
         const r = await fetch(`${FB}/bans/${fbRes.uid}.json`);
         const d = await r.json();
         if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return; }
       } catch {}
-    }, 200);
+      Leaderboard.push(Auth.me()||u);
+    }, 100);
  
     return { ok:true };
   },
@@ -460,25 +457,10 @@ const Auth = {
       if (!data) return [];
       const local = this.users();
       return Object.values(data).map(fb => {
-        // Buscar en local por email o uid
-        const loc = local[fb.email] || local[fb.username] || {};
-        return {
-          username:    fb.email || fb.username,
-          displayName: fb.displayName || loc.displayName || 'Sin nombre',
-          level:       loc.level || fb.level || 1,
-          banned:      fb.banned || loc.banned || false,
-          uid:         fb.uid || '',
-        };
+        const loc = local[fb.username];
+        return { username:fb.username, displayName:fb.displayName, level:loc?.level||fb.level||1, banned:fb.banned||loc?.banned||false };
       });
-    } catch {
-      // Fallback: usuarios locales
-      return Object.values(this.users()).map(u=>({
-        username: u.email || u.username,
-        displayName: u.displayName,
-        level: u.level||1,
-        banned: u.banned||false,
-      }));
-    }
+    } catch { return Object.values(this.users()); }
   },
  
   setDominioNombre(nombre) {
@@ -503,6 +485,12 @@ const Auth = {
     const users = this.users();
     users[u.username] = u;
     this.saveUsers(users);
+   // Ya existe este fetch, solo agrega avatar:
+  fetch(`${FB}/progress/${u.username}.json`, {
+    method: 'PATCH',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ level: u.level, totalXP: u.totalXP, displayName: u.displayName, avatar: u.avatar || '' })
+  }).catch(()=>{});
     // Sincronizar progreso completo a Firebase (sin contraseña)
     try {
       fetch(`${FB}/progress/${u.username}.json`, {
@@ -665,14 +653,11 @@ const QEngine = {
 ══════════════════════════════════════════════════ */
 const Leaderboard = {
   async push(u) {
-    if (!u) return;
-    // Usar UID como clave si existe, sino email (no exponer correo como clave visible)
-    const key = u.uid || (u.email||u.username||'').replace(/[.#$/[\]]/g,'_');
     try {
-      await fetch(`${FB}/leaderboard/${key}.json`, {
+      await fetch(`${FB}/leaderboard/${u.username}.json`, {
         method:'PUT', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
-          username:    u.email || u.username,
+          username:    u.username,
           displayName: u.displayName,
           level:       u.level,
           xp:          u.xp||0,
@@ -722,17 +707,15 @@ const Leaderboard = {
       for (let i=0; i<top.length; i++) {
         const p  = top[i];
         const mt = medalMap[i];
-        const pkey = p.uid || (p.username||'').replace(/[.#$/[\]]/g,'_');
-        const r  = await fetch(`${FB}/leaderboard/${pkey}.json`);
+        const r  = await fetch(`${FB}/leaderboard/${p.username}.json`);
         const e  = await r.json() || {};
         e.medals = e.medals || {gold:0,silver:0,bronze:0};
         e.medals[mt]++;
-        await fetch(`${FB}/leaderboard/${pkey}.json`, {
+        await fetch(`${FB}/leaderboard/${p.username}.json`, {
           method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(e),
         });
         const lu = Auth.users();
-        const lk = p.username;
-        if (lu[lk]) { lu[lk].medals=lu[lk].medals||{gold:0,silver:0,bronze:0}; lu[lk].medals[mt]++; Auth.saveUsers(lu); }
+        if (lu[p.username]) { lu[p.username].medals=lu[p.username].medals||{gold:0,silver:0,bronze:0}; lu[p.username].medals[mt]++; Auth.saveUsers(lu); }
       }
       // Reset all
       const all = await fetch(`${FB}/leaderboard.json`).then(r=>r.json()).catch(()=>({})) || {};
@@ -1159,10 +1142,8 @@ const Notify = {
    GUARDS + SEASON CHECK
 ══════════════════════════════════════════════════ */
 async function checkBan(username) {
-  const u = Auth.me();
-  const uid = u?.uid || username;
   try {
-    const r = await fetch(`${FB}/bans/${uid}.json`);
+    const r = await fetch(`${FB}/bans/${username}.json`);
     const d = await r.json();
     if (d?.banned) { Auth.logout(); window.location.href='index.html?banned=1'; return true; }
   } catch {}
@@ -1187,43 +1168,11 @@ async function checkSeasonReset(username) {
   } catch {}
 }
  
-async function checkAdminEdit(u) {
-  if (!u?.uid) return;
-  try {
-    const r = await fetch(`${FB}/admin_edits/${u.uid}.json`);
-    const edit = await r.json();
-    if (!edit || !edit.ts) return;
-    // Solo aplicar si es más reciente que el último check
-    const lastCheck = parseInt(Store.get('ei_last_admin_edit_'+u.uid)||'0');
-    if (edit.ts <= lastCheck) return;
-    Store.set('ei_last_admin_edit_'+u.uid, String(edit.ts));
-    // Aplicar cambios al usuario local
-    const users = Auth.users();
-    const key   = u.email || u.username;
-    if (!users[key]) return;
-    if (edit.level   !== undefined) users[key].level   = edit.level;
-    if (edit.totalXP !== undefined) users[key].totalXP = edit.totalXP;
-    if (edit.xp      !== undefined) users[key].xp      = edit.xp;
-    if (edit.monedas !== undefined) users[key].monedas = edit.monedas;
-    if (edit.streak  !== undefined) users[key].streak  = edit.streak;
-    Auth.saveUsers(users);
-    // Notificar al jugador
-    console.log('[EDU-ICFES] Admin actualizó tu perfil → Nv.'+edit.level);
-    // Si hay Notify disponible, mostrar mensaje
-    if (typeof Notify !== 'undefined') {
-      setTimeout(()=>Notify.show('⚡ Tu perfil fue actualizado por el admin','levelup',4000), 1500);
-    }
-    // Recargar HUD si estamos en main
-    if (typeof updateHUD === 'function') setTimeout(updateHUD, 200);
-  } catch {}
-}
- 
 function requireAuth() {
   const u = Auth.me();
   if (!u) { window.location.href = 'index.html'; return null; }
   checkBan(u.username);
   checkSeasonReset(u.username);
-  checkAdminEdit(u); // verificar si admin editó este usuario
   return u;
 }
  
@@ -1249,24 +1198,47 @@ const $$ = (s,c=document) => [...c.querySelectorAll(s)];
 /* ══════════════════════════════════════════════════
    EXPORT
 ══════════════════════════════════════════════════ */
-// Sincronizar todos los usuarios locales al leaderboard de Firebase
-async function syncAllLocalToLeaderboard() {
-  const users = Auth.users();
-  const all   = Object.values(users);
-  for (const u of all) {
-    await Leaderboard.push(u);
-  }
-  return all.length;
-}
- 
 Object.assign(window, {
   Auth, Progress, QEngine, Leaderboard, Announcements, Sound, Notify, Store,
-  syncAllLocalToLeaderboard,
   Economy, SHOP_ITEMS, CONTRATO_OPCIONES, SHOP_EFFECTS, Contrato,
   SUBJECTS, ACHIEVEMENTS, RANKS, QUESTIONS, ADMIN, FB,
   xpNecesaria, recompensaXP, XP_STREAK_BONUS,
-  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset, checkAdminEdit,
+  $, $$, requireAuth, redirectIfLogged, checkBan, checkSeasonReset,
 });
  
 // Verificación de carga correcta
 console.log('[EDU-ICFES] Preguntas cargadas:', QUESTIONS.length, '| Firebase:', FB);
+const AvatarUpload = {
+  // Convierte imagen local a Base64 (200x200 max) y la guarda en el usuario
+  async upload(file) {
+    return new Promise((res, rej) => {
+      const img = new Image(), fr = new FileReader();
+      fr.onload = e => { img.src = e.target.result; };
+      fr.onerror = rej;
+      img.onload = () => {
+        const s = Math.min(200/img.width, 200/img.height, 1);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+  },
+  async save(file) {
+    if (file.size > 5*1024*1024) { Notify.error('Imagen muy grande. Máx 5 MB.'); return null; }
+    const b64 = await this.upload(file);
+    const u = Auth.me();
+    u.avatar = b64;
+    Auth.updateUser(u);
+    // Guardar en Firebase Realtime DB
+    const uid = u.uid || u.username;
+    fetch(`${FB}/users/${uid}/avatar.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(b64)
+    }).catch(()=>{});
+    return b64;
+  }
+};
