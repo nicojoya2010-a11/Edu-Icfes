@@ -78,7 +78,9 @@
 /* ── HUD BATALLA ── */
 .batalla-hud {
   display: grid; grid-template-columns: 1fr auto 1fr;
-  align-items: center; gap: 8px; padding: 14px 16px;
+  align-items: center; gap: 8px; padding: 12px 14px;
+  background: var(--bg-card);
+  border-radius: calc(var(--radius) - 1px);
 }
 .hud-jugador { display: flex; flex-direction: column; gap: 5px; }
 .hud-jugador.rival { align-items: flex-end; text-align: right; }
