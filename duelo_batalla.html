@@ -303,7 +303,7 @@ async function init() {
     const res=await fetch(`${DUELO_DB}/${salaId}.json`);
     sala=await res.json();
     if (!sala) { irLobby(); return; }
-    const esJ1=sala.jugador1.username===batUser.username;
+    const esJ1=sala.jugador1.uid===batUser.uid||sala.jugador1.username===batUser.username;
     const local=esJ1?sala.jugador1:sala.jugador2;
     const rival=esJ1?sala.jugador2:sala.jugador1;
  
@@ -531,7 +531,7 @@ async function elegir(sel,correct,porTiempo=false) {
   });
  
   // Enviar selección para Sharingan del rival
-  const esJ1=sala.jugador1.username===batUser.username;
+  const esJ1=sala.jugador1.uid===batUser.uid||sala.jugador1.username===batUser.username;
   try {
     await fetch(`${DUELO_DB}/${salaId}/sharingan_${esJ1?'j1':'j2'}.json`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
@@ -656,7 +656,7 @@ function startPolling() {
     try {
       const res=await fetch(`${DUELO_DB}/${salaId}.json`);
       const data=await res.json(); if(!data) return;
-      const esJ1=data.jugador1.username===batUser.username;
+      const esJ1=data.jugador1.uid===batUser.uid||data.jugador1.username===batUser.username;
       const rivalPts = esJ1?(data.jugador2?.puntos||0):data.jugador1.puntos;
  
       // Detectar si el rival falló (comparando puntos)
@@ -680,7 +680,7 @@ function startPolling() {
  
       // Genjutsu del rival
       const gen=data.genjutsu_activo;
-      if(gen&&gen.ts>_lastGenjutsuTs&&gen.target===batUser.username&&!respondido){
+      if(gen&&gen.ts>_lastGenjutsuTs&&(gen.target===batUser.uid||gen.target===batUser.username)&&!respondido){
         _lastGenjutsuTs=gen.ts;
         if(PS.domSimpleOn){
           PS.domSimpleOn=false; document.getElementById('ds-bar').classList.add('hidden');
@@ -839,7 +839,7 @@ async function efectoGenjutsu() {
   }));
   flashPoder('🌀 Genjutsu enviado','#9b30ff');
   Sound.beep(330,.12,'sine',.1); setTimeout(()=>Sound.beep(440,.14,'sine',.1),100);
-  const esJ1=sala.jugador1.username===batUser.username;
+  const esJ1=sala.jugador1.uid===batUser.uid||sala.jugador1.username===batUser.username;
   const target=esJ1?sala.jugador2?.username:sala.jugador1.username;
   try {
     await fetch(`${DUELO_DB}/${salaId}/genjutsu_activo.json`,{
@@ -886,7 +886,7 @@ function efectoDomSimple() {
 }
  
 async function efectoDominio() {
-  const esJ1=sala.jugador1.username===batUser.username;
+  const esJ1=sala.jugador1.uid===batUser.uid||sala.jugador1.username===batUser.username;
   try {
     const r=await fetch(`${DUELO_DB}/${salaId}/dominio_activo.json`);
     const rivalDom=await r.json();
@@ -979,7 +979,7 @@ async function finalizarDuelo() {
   try {
     const res=await fetch(`${DUELO_DB}/${salaId}.json`);
     const data=await res.json();
-    if(data){const esJ1=data.jugador1.username===batUser.username;ptsRival=esJ1?(data.jugador2?.puntos||0):data.jugador1.puntos;}
+    if(data){const esJ1=data.jugador1.uid===batUser.uid||data.jugador1.username===batUser.username;ptsRival=esJ1?(data.jugador2?.puntos||0):data.jugador1.puntos;}
   } catch {}
   const resultado=ptsMe>ptsRival?'victoria':ptsMe<ptsRival?'derrota':'empate';
   const xpMult=resultado==='victoria'?2:resultado==='empate'?1:.5;
