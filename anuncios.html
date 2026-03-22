@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edu-Icfes — Anuncios</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ann-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      transition: var(--transition);
+      animation: fadeUp .3s ease both;
+    }
+    .ann-card:hover { border-left-color: var(--amber); box-shadow: var(--shadow-sm); }
+    .ann-card.nuevo { border-left-color: var(--green); background: var(--bg-card); }
+    .ann-text { font-size: .92rem; color: var(--ink); line-height: 1.65; margin-bottom: 10px; }
+    .ann-meta { display:flex; align-items:center; justify-content:space-between; }
+    .ann-author { font-family:var(--mono); font-size:.62rem; color:var(--ink-3); }
+    .ann-date   { font-family:var(--mono); font-size:.62rem; color:var(--ink-4); }
+    .ann-badge-nuevo {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 8px; border-radius:20px;
+      background:#dcfce7; border:1px solid #86efac;
+      font-family:var(--mono); font-size:.55rem; color:#166534;
+    }
+    .empty-state {
+      text-align:center; padding:48px 20px;
+    }
+    .empty-icon { font-size:2.5rem; margin-bottom:12px; }
+    .empty-text { font-family:var(--mono); font-size:.75rem; color:var(--ink-3); line-height:1.7; }
+  </style>
+</head>
+<body>
+<div id="notification-container"></div>
+
+<div class="page-wrapper">
+
+  <div class="topbar">
+    <button class="back-btn" onclick="Sound.click();window.location.href='main.html'">Base</button>
+    <div class="topbar-brand">Edu<em>-Icfes</em></div>
+    <div class="topbar-time" id="clock">--:--</div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <h2 style="font-size:1.4rem;margin-bottom:4px;">Anuncios <em style="color:var(--amber);">oficiales</em></h2>
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);">Publicados por el administrador</div>
+  </div>
+
+  <!-- Filtro -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button class="subject-filter-btn active" id="f-todos"  onclick="setFilter('todos',this)">Todos</button>
+    <button class="subject-filter-btn"        id="f-nuevos" onclick="setFilter('nuevos',this)">🔔 Nuevos</button>
+  </div>
+
+  <!-- Lista -->
+  <div id="ann-list">
+    <div style="text-align:center;padding:40px;">
+      <div class="loader"></div>
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--ink-3);margin-top:14px;">Cargando anuncios...</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="preguntas.js"></script>
+<script src="app.js"></script>
+<script>
+  const annUser = requireAuth();
+  if (!annUser) throw new Error('no auth');
+
+  let allAnn = [], filter = 'todos';
+  const seen = Store.get('ei_seen_'+annUser.username) || [];
+
+  async function load() {
+    try {
+      const r    = await fetch(`${FB}/announcements.json`);
+      const data = await r.json();
+      allAnn     = data ? Object.values(data).sort((a,b)=>b.createdAt-a.createdAt) : [];
+    } catch {
+      allAnn = Object.values(Store.get('ei_ann')||{}).sort((a,b)=>b.createdAt-a.createdAt);
+    }
+    // Marcar todos como vistos
+    Announcements.markSeen(annUser, allAnn.map(a=>a.id));
+    render();
+    updateClock();
+  }
+
+  function setFilter(f, btn) {
+    filter = f;
+    $$('.subject-filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('ann-list');
+    const since48 = Date.now() - 48*60*60*1000;
+    let items = allAnn;
+    if (filter==='nuevos') items = allAnn.filter(a=>a.createdAt>since48);
+
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">${filter==='nuevos'?'No hay anuncios nuevos<br>en las últimas 48 horas.':'Aún no hay anuncios publicados.'}</div>
+      </div>`;
+      return;
+    }
+
+    list.innerHTML = items.map((a,i) => {
+      const isNew  = a.createdAt > since48;
+      const d      = new Date(a.createdAt);
+      const fecha  = d.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
+      const hora   = d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="ann-card ${isNew&&!seen.includes(a.id)?'nuevo':''}" style="animation-delay:${i*.05}s">
+        <div class="ann-text">${a.text}</div>
+        <div class="ann-meta">
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${isNew?`<span class="ann-badge-nuevo">🔔 Nuevo</span>`:''}
+            <span class="ann-author">📢 ${a.author||'Admin'}</span>
+          </div>
+          <span class="ann-date">${fecha} · ${hora}</span>
+        </div>
+      </div>`;
+    }).join('<div style="height:8px;"></div>');
+  }
+
+  function updateClock() {
+    const tick=()=>{ document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); };
+    tick(); setInterval(tick,10000);
+  }
+
+  load();
+</script>
+</body>
+</html>
