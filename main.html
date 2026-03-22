@@ -9,7 +9,7 @@
     /* Títulos del menú centrados */
     .nav-title { text-align: center; }
     .nav-desc  { text-align: center; }
-
+ 
     /* Avatar con foto */
     #p-avatar { position:relative; cursor:pointer; overflow:hidden; transition:transform .15s; }
     #p-avatar:hover { transform:scale(1.04); }
@@ -247,7 +247,13 @@
 <script src="app.js"></script>
 <script>
   const u = requireAuth();
-  if (u) init();
+  if (u) {
+    init();
+    // Refrescar desde Firebase en background por si el admin editó el perfil
+    Auth.refreshFromFirebase().then(fresh => {
+      if (fresh && fresh.level !== u.level) updateHUD();
+    });
+  }
  
   function init() { updateHUD(); startClock(); setTimeout(checkAnn, 1500); }
  
@@ -605,6 +611,16 @@
       });
     } catch {}
  
+    // 5. Escribir en /admin_edits/{uid} para que el jugador lo detecte al recargar
+    const editPayload = { level, totalXP, xp:0, monedas, streak, ts: Date.now() };
+    try {
+      await fetch(`${FB}/admin_edits/${uid}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(editPayload),
+      });
+    } catch {}
+ 
     // 5. Si el jugador editado es el mismo admin, actualizar cache en memoria
     const me = Auth.me();
     if (me && me.uid === uid) {
@@ -689,7 +705,7 @@
   }
   function closeLU() { document.getElementById('levelup-overlay').classList.add('hidden'); }
   function logout() { Auth.logout(); window.location.href='index.html'; }
-
+ 
   /* ── AVATAR ── */
   async function handleAvatarChange(event) {
     const file = event.target.files[0];
@@ -700,7 +716,7 @@
     Notify.success('✓ Foto de perfil guardada.');
     Sound.correct();
   }
-
+ 
   function setAvatarPreview(src) {
     const avatarEl = document.getElementById('p-avatar');
     const letterEl = document.getElementById('p-avatar-letter');
