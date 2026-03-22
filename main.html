@@ -47,8 +47,7 @@
   <!-- Player card -->
   <div class="card card-accent animate-in" style="margin-bottom:10px;">
     <div class="player-card">
-      <div class="player-avatar" id="p-avatar" onclick="document.getElementById('av-input').click()" style="cursor:pointer;overflow:hidden;" title="Cambiar foto">?</div>
-      <input type="file" id="av-input" accept="image/*" style="display:none;" onchange="cambiarAvatar(event)">
+      <div class="player-avatar" id="p-avatar">?</div>
       <div class="player-info">
         <div class="player-name" id="p-name">—</div>
         <div class="player-rank" id="p-rank">—</div>
@@ -231,8 +230,7 @@
 <script src="preguntas.js"></script>
 <script src="app.js"></script>
 <script>
-  const u = requireAuth();
-  if (u) init();
+  (async()=>{ const u = await requireAuth(); if(u) init(); })();
 
   function init() { updateHUD(); startClock(); setTimeout(checkAnn, 1500); }
 
@@ -241,12 +239,7 @@
     const rank   = Progress.getRank(u.level);
     const pct    = Progress.xpPct(u);
     const medals = u.medals||{};
-    const avEl = document.getElementById('p-avatar');
-    if (u.avatar) {
-      avEl.innerHTML = `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
-    } else {
-      avEl.textContent = u.displayName[0].toUpperCase();
-    }
+    document.getElementById('p-avatar').textContent  = u.displayName[0].toUpperCase();
     document.getElementById('p-name').textContent    = u.displayName;
     document.getElementById('p-rank').textContent    = rank.label+' · Rango '+rank.rank+(medals.gold>0?'  🥇×'+medals.gold:'')+(medals.silver>0?'  🥈×'+medals.silver:'')+(medals.bronze>0?'  🥉×'+medals.bronze:'');
     document.getElementById('p-level').textContent   = u.level;
@@ -357,12 +350,7 @@
     }).join('');
     document.getElementById('profile-body').innerHTML=`
       <div style="text-align:center;padding:16px 0 20px;">
-        <div style="width:64px;height:64px;border-radius:16px;overflow:hidden;margin:0 auto 12px;box-shadow:var(--glow-bp);">
-          ${u.avatar
-            ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;">`
-            : `<div style="width:100%;height:100%;background:var(--grad-h);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;color:#fff;">${u.displayName[0].toUpperCase()}</div>`
-          }
-        </div>
+        <div style="width:64px;height:64px;border-radius:16px;background:var(--grad-h);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;color:#fff;margin:0 auto 12px;box-shadow:var(--glow-bp);">${u.displayName[0].toUpperCase()}</div>
         <div style="font-family:var(--serif);font-size:1.2rem;">${u.displayName}</div>
         <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);">@${u.username}</div>
         <div style="font-family:var(--mono);font-size:.72rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:4px;">${rank.label} · Rango ${rank.rank}</div>
@@ -397,6 +385,10 @@
     const body=document.getElementById('leaderboard-body');
     const me=Auth.me();
     body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+
+    // Asegurar que el usuario actual esté en el ranking
+    Leaderboard.push(me).catch(()=>{});
+
     const top=await Leaderboard.getTop(10);
     const medals=['🥇','🥈','🥉'];
     const rows=top.map((p,i)=>`
@@ -414,6 +406,10 @@
   async function renderAllPlayers() {
     const body=document.getElementById('allplayers-body'), me=Auth.me();
     body.innerHTML='<div style="text-align:center;padding:30px;"><div class="loader"></div></div>';
+
+    // Sincronizar usuarios locales primero
+    await syncAllLocalToLeaderboard().catch(()=>{});
+
     const all=await Leaderboard.getAll();
     const myPos=all.findIndex(p=>p.username===me.username);
     const medals=['🥇','🥈','🥉'];
@@ -450,55 +446,65 @@
     const body=document.getElementById('ban-body');
     body.innerHTML='<div style="text-align:center;padding:20px;"><div class="loader"></div></div>';
     const users=await Auth.getAllGlobal(), banData=await Auth.getBans();
-    const filtered=users.filter(u=>u.username!==ADMIN);
+    // Filtrar admin y entradas inválidas
+    const filtered=users.filter(u=>u.uid && u.username!==ADMIN && u.email!==ADMIN);
+    if (!filtered.length) {
+      body.innerHTML='<p style="font-family:var(--mono);font-size:.78rem;color:var(--ink-3);text-align:center;padding:20px;">Sin jugadores registrados aún.</p>';
+      return;
+    }
     body.innerHTML=`
-      <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);margin-bottom:12px;">${filtered.length} usuario(s) — toca ✏️ para editar</div>
-      ${filtered.length===0
-        ? '<p style="font-family:var(--mono);font-size:.78rem;color:var(--ink-3);text-align:center;">Sin usuarios.</p>'
-        : filtered.map(u=>{
-            const fb=banData[u.uid||u.username]?.banned===true, banned=fb||u.banned;
-            const key=u.uid||u.username;
-            return `<div style="padding:12px 0;border-bottom:1px solid var(--border);">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:.88rem;">${u.displayName}</div>
-                  <div style="font-family:var(--mono);font-size:.6rem;color:var(--ink-3);margin-top:2px;">
-                    @${u.username} · Nv.<strong id="lbl-nv-${key}">${u.level}</strong>
-                    · ${banned?'<span style="color:var(--red);">Baneado</span>':'<span style="color:var(--green);">Activo</span>'}
-                  </div>
-                </div>
-                <button class="btn btn-ghost btn-sm" style="font-size:.75rem;color:var(--ink-3);" onclick="toggleEditUser('${key}')">✏️</button>
-                ${banned
-                  ? `<button class="btn btn-sm" style="background:var(--green-lt);color:var(--green);box-shadow:none;" onclick="doUnban('${u.username}','${u.uid||''}')">Desbanear</button>`
-                  : `<button class="btn btn-danger btn-sm" onclick="doBan('${u.username}','${u.uid||''}')">Banear</button>`}
-              </div>
-              <div id="edit-${key}" style="display:none;margin-top:10px;padding:12px;background:var(--bg-subtle);border:1px solid rgba(22,115,255,0.2);border-radius:var(--radius-xs);">
-                <div style="font-family:var(--mono);font-size:.6rem;color:rgba(22,115,255,0.7);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">Editar jugador</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                  <div class="input-group">
-                    <label class="input-label">Nivel</label>
-                    <input class="input-field" id="inp-level-${key}" type="number" min="1" max="200" value="${u.level||1}" style="padding:8px 10px;font-size:.88rem;">
-                  </div>
-                  <div class="input-group">
-                    <label class="input-label">XP Total</label>
-                    <input class="input-field" id="inp-xp-${key}" type="number" min="0" value="${u.totalXP||0}" style="padding:8px 10px;font-size:.88rem;">
-                  </div>
-                  <div class="input-group">
-                    <label class="input-label">Monedas</label>
-                    <input class="input-field" id="inp-coins-${key}" type="number" min="0" value="${u.monedas||0}" style="padding:8px 10px;font-size:.88rem;">
-                  </div>
-                  <div class="input-group">
-                    <label class="input-label">Racha</label>
-                    <input class="input-field" id="inp-streak-${key}" type="number" min="0" value="${u.streak||0}" style="padding:8px 10px;font-size:.88rem;">
-                  </div>
-                </div>
-                <div style="display:flex;gap:8px;">
-                  <button class="btn btn-primary btn-sm" style="flex:1;" onclick="guardarEdicion('${key}','${u.username}')">💾 Guardar</button>
-                  <button class="btn btn-ghost btn-sm" onclick="toggleEditUser('${key}')">Cancelar</button>
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--ink-3);margin-bottom:12px;">${filtered.length} jugador(es) — toca ✏️ para editar</div>
+      ${filtered.map(u=>{
+          const banned = banData[u.uid]?.banned===true || u.banned;
+          const uid    = u.uid;
+          const correo = u.username || u.email || '—';
+          return `<div style="padding:12px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:.88rem;">${u.displayName}</div>
+                <div style="font-family:var(--mono);font-size:.58rem;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${correo} · Nv.<strong id="lbl-nv-${uid}">${u.level}</strong>
+                  · ${banned
+                      ? '<span style="color:var(--red);">Baneado</span>'
+                      : '<span style="color:var(--green);">Activo</span>'}
                 </div>
               </div>
-            </div>`;
-          }).join('')}`;
+              <button class="btn btn-ghost btn-sm" style="font-size:.8rem;flex-shrink:0;"
+                onclick="toggleEditUser('${uid}')">✏️</button>
+              ${banned
+                ? `<button class="btn btn-sm" style="background:var(--green-lt);color:var(--green);box-shadow:none;flex-shrink:0;" onclick="doUnban('${correo}','${uid}')">Desbanear</button>`
+                : `<button class="btn btn-danger btn-sm" style="flex-shrink:0;" onclick="doBan('${correo}','${uid}')">Banear</button>`}
+            </div>
+            <!-- Panel edición -->
+            <div id="edit-${uid}" style="display:none;margin-top:10px;padding:12px;background:var(--bg-subtle);border:1px solid rgba(22,115,255,0.2);border-radius:var(--radius-xs);">
+              <div style="font-family:var(--mono);font-size:.58rem;color:rgba(22,115,255,0.7);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">
+                Editando: ${u.displayName}
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div class="input-group">
+                  <label class="input-label">Nivel</label>
+                  <input class="input-field" id="inp-level-${uid}" type="number" min="1" max="200" value="${u.level}" style="padding:8px 10px;font-size:.88rem;">
+                </div>
+                <div class="input-group">
+                  <label class="input-label">XP Total</label>
+                  <input class="input-field" id="inp-xp-${uid}" type="number" min="0" value="${u.totalXP||0}" style="padding:8px 10px;font-size:.88rem;">
+                </div>
+                <div class="input-group">
+                  <label class="input-label">Monedas 🪙</label>
+                  <input class="input-field" id="inp-coins-${uid}" type="number" min="0" value="${u.monedas||0}" style="padding:8px 10px;font-size:.88rem;">
+                </div>
+                <div class="input-group">
+                  <label class="input-label">Racha 🔥</label>
+                  <input class="input-field" id="inp-streak-${uid}" type="number" min="0" value="${u.streak||0}" style="padding:8px 10px;font-size:.88rem;">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="guardarEdicion('${uid}')">💾 Guardar en Firebase</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleEditUser('${uid}')">Cancelar</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}`;
   }
 
   function toggleEditUser(key) {
@@ -506,34 +512,78 @@
     if(panel) panel.style.display=panel.style.display==='none'?'block':'none';
   }
 
-  async function guardarEdicion(uid, username) {
+  async function guardarEdicion(uid) {
+    const email = ''; // ya no necesario, usamos uid directo
     const level  = parseInt(document.getElementById('inp-level-'+uid)?.value)||1;
     const totalXP= parseInt(document.getElementById('inp-xp-'+uid)?.value)||0;
     const monedas= parseInt(document.getElementById('inp-coins-'+uid)?.value)||0;
     const streak = parseInt(document.getElementById('inp-streak-'+uid)?.value)||0;
+
     if (level<1||level>200) { Notify.error('Nivel inválido (1-200).'); return; }
+
+    // 1. Leer progreso actual del jugador en Firebase para no borrar otros datos
+    let progresoActual = {};
     try {
-      const r=await fetch(`${FB}/leaderboard/${uid}.json`);
-      const cur=await r.json()||{};
-      await fetch(`${FB}/leaderboard/${uid}.json`,{ method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...cur,level,totalXP,monedas,streak,updatedAt:Date.now()}) });
-    } catch { Notify.error('Error actualizando leaderboard.'); return; }
-    try {
-      await fetch(`${FB}/users/${uid}/level.json`,  { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(level) });
-      await fetch(`${FB}/users/${uid}/totalXP.json`,{ method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(totalXP) });
+      const r = await fetch(`${FB}/progress/${uid}.json`);
+      progresoActual = await r.json() || {};
     } catch {}
-    try {
-      await fetch(`${FB}/admin_edits/${uid}.json`,{ method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({level,totalXP,monedas,streak,xp:0,ts:Date.now()}) });
-    } catch { Notify.error('Error guardando señal.'); return; }
-    const localUsers=Auth.users();
-    if (localUsers[username]) {
-      localUsers[username].level=level; localUsers[username].totalXP=totalXP;
-      localUsers[username].monedas=monedas; localUsers[username].streak=streak; localUsers[username].xp=0;
-      Auth.saveUsers(localUsers);
+
+    if (!progresoActual.uid) {
+      Notify.error('No se encontró el progreso de este jugador en Firebase.');
+      return;
     }
-    const lbl=document.getElementById('lbl-nv-'+uid);
-    if(lbl) lbl.textContent=level;
+
+    // 2. Actualizar /progress/{uid} — fuente de verdad principal
+    const progresoNuevo = {
+      ...progresoActual,
+      level,
+      totalXP,
+      monedas,
+      streak,
+      xp: 0,
+      updatedAt: Date.now(),
+    };
+    try {
+      await fetch(`${FB}/progress/${uid}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(progresoNuevo),
+      });
+    } catch { Notify.error('Error actualizando progreso en Firebase.'); return; }
+
+    // 3. Actualizar /leaderboard/{uid} para que el ranking refleje el cambio
+    try {
+      const rl  = await fetch(`${FB}/leaderboard/${uid}.json`);
+      const cur = await rl.json() || {};
+      await fetch(`${FB}/leaderboard/${uid}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ ...cur, level, totalXP, monedas, streak, updatedAt:Date.now() }),
+      });
+    } catch {}
+
+    // 4. Actualizar /users/{uid} para el admin panel
+    try {
+      await fetch(`${FB}/users/${uid}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ level, totalXP }),
+      });
+    } catch {}
+
+    // 5. Si el jugador editado es el mismo admin, actualizar cache en memoria
+    const me = Auth.me();
+    if (me && me.uid === uid) {
+      me.level=level; me.totalXP=totalXP; me.monedas=monedas; me.streak=streak; me.xp=0;
+      Auth._cache = me;
+      updateHUD();
+    }
+
+    // Actualizar label visible en el panel
+    const lbl = document.getElementById('lbl-nv-'+uid);
+    if (lbl) lbl.textContent = level;
     toggleEditUser(uid);
-    Notify.success('✓ Guardado. El jugador lo verá al recargar.');
+    Notify.success('✓ Guardado en Firebase. El jugador lo verá al recargar.');
     Sound.correct();
   }
 
@@ -604,16 +654,8 @@
     Sound.levelUp();
   }
   function closeLU() { document.getElementById('levelup-overlay').classList.add('hidden'); }
-  async function cambiarAvatar(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const b64 = await AvatarUpload.save(file);
-    if (!b64) return;
-    const avEl = document.getElementById('p-avatar');
-    avEl.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
-    Notify.success('Foto actualizada ✓');
-  }
-
   function logout() { Auth.logout(); window.location.href='index.html'; }
 </script>
 </body>
 </html>
+
